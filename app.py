@@ -61,7 +61,7 @@ SAVINGS_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
 DEBT_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
 RECOVERY_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
 LINKEDIN_URL = 'https://www.linkedin.com/in/ficore-africa-58913a363/'
-TWITTER_URL = 'https://x.com/ficoreafrica'
+TWITTER_URL = 'https://x.com/HassanAhm4d?t=lbiyFqRHoINfJxl9c30xBA&s=09'
 
 # Define translations
 translations = {
