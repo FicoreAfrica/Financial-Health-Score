@@ -6,7 +6,7 @@
 
 # Import required libraries
 import gspread
-from google.oauth2.credentials import Credentials
+from google.oauth2.service_account import Credentials
 from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages, send_from_directory
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField
