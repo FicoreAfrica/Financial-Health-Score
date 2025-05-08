@@ -1,13 +1,6 @@
-# Ficore Africa Financial Health Score Application
-# File: app.py
-# Purpose: Flask app to calculate financial health scores, store data in Google Sheets, and render user dashboards
-# Version: Updated May 1st, 2025, supports the "Click to Email" button in index.html with proper translations for both languages
-# Repository: https://github.com/Warpiiv/ficore-ai
-
-# Import required libraries
 import gspread
 from google.oauth2.service_account import Credentials
-from flask import Flask, render_template, request, redirect, url_for, flash, get_flashed_messages, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Email, ValidationError
@@ -25,30 +18,52 @@ import time
 import logging
 import traceback
 import re
+import threading
 
-# Configure logging for debugging and monitoring
-logging.basicConfig(level=logging.DEBUG)
+# Configure logging with structured format
+logging.basicConfig(
+    level=logging.DEBUG,
+    format='%(asctime)s [%(levelname)s] %(name)s: %(message)s',
+    handlers=[
+        logging.StreamHandler(),
+        logging.FileHandler('app.log')
+    ]
+)
 logger = logging.getLogger(__name__)
 
-# Initialize Flask app with custom template and static folders
+# Initialize Flask app
 app = Flask(__name__, template_folder='templates', static_folder='static')
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Set Flask secret key for sessions and CSRF protection
 app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 if not app.secret_key:
-    logger.error("FLASK_SECRET_KEY environment variable not set. CSRF protection and sessions will fail.")
-    raise Exception("FLASK_SECRET_KEY environment variable not set.")
+    logger.critical("FLASK_SECRET_KEY not set. Application will not start.")
+    raise RuntimeError("FLASK_SECRET_KEY environment variable not set.")
 
-# Set CSRF token expiration to 24 hours (86400 seconds)
-app.config['WTF_CSRF_TIME_LIMIT'] = 86400
-
-# Configure Flask-Caching for memoizing Google Sheets data
+# Configure CSRF and caching
+app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24-hour CSRF token expiration
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
-# Define translations for English and Hausa
+# Load environment variables
+load_dotenv()
+
+# Define constants
+SCOPE = ['https://www.googleapis.com/auth/spreadsheets']
+SPREADSHEET_ID = '1zL-darNUUmJWfonzotcKmcfnS7FsDU4oyHDTsejgO-A'
+PREDETERMINED_HEADERS = [
+    'Timestamp', 'business_name', 'income_revenue', 'expenses_costs', 'debt_loan',
+    'debt_interest_rate', 'auto_email', 'phone_number', 'first_name', 'last_name',
+    'user_type', 'email', 'badges', 'language'
+]
+FEEDBACK_FORM_URL = 'https://forms.gle/1g1FVulyf7ZvvXr7G0q7hAKwbGJMxV4blpjBuqrSjKzQ'
+WAITLIST_FORM_URL = 'https://forms.gle/17e0XYcp-z3hCl0I-j2JkHoKKJrp4PfgujsK8D7uqNxo'
+CONSULTANCY_FORM_URL = 'https://forms.gle/1TKvlT7OTvNS70YNd8DaPpswvqd9y7hKydxKr07gpK9A'
+INVESTING_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
+SAVINGS_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
+DEBT_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
+RECOVERY_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
+LINKEDIN_URL = 'https://www.linkedin.com/in/ficore-africa-58913a363/'
+TWITTER_URL = 'https://x.com/ficoreafrica'
+
+# Define translations
 translations = {
     'English': {
         'Welcome': 'Welcome',
@@ -175,6 +190,11 @@ translations = {
                     Have a Nice Day!.
                 </p>
                 <p>Best regards,<br>The Ficore Africa Team</p>
+                <p>
+                    Follow us on 
+                    <a href="{linkedin_url}" style="text-decoration: none; color: #0A66C2;">LinkedIn</a> and 
+                    <a href="{twitter_url}" style="text-decoration: none; color: #1DA1F2;">Twitter</a> for updates.
+                </p>
             </body>
             </html>
         ''',
@@ -310,6 +330,11 @@ translations = {
                     A huta Lafiya!
                 </p>
                 <p>Gaisuwa,<br>Daga Ƙungiyar Ficore Africa</p>
+                <p>
+                    Bi mu a kan 
+                    <a href="{linkedin_url}" style="text-decoration: none; color: #0A66C2;">LinkedIn</a> da 
+                    <a href="{twitter_url}" style="text-decoration: none; color: #1DA1F2;">Twitter</a> don sabuntawa.
+                </p>
             </body>
             </html>
         ''',
@@ -322,61 +347,49 @@ translations = {
     }
 }
 
-# Define constants for Google Sheets and external URLs
-scope = ['https://www.googleapis.com/auth/spreadsheets']
-SPREADSHEET_ID = '1zL-darNUUmJWfonzotcKmcfnS7FsDU4oyHDTsejgO-A'
-DATA_RANGE_NAME = 'Sheet1!A1:N'
-RESULTS_SHEET_NAME = 'FicoreAfricaResults'
-RESULTS_HEADER = ['Email', 'FicoreAfricaScore', 'FicoreAfricaRank']
-FEEDBACK_FORM_URL = 'https://forms.gle/NkiLicSykLyMnhJk7'
-WAITLIST_FORM_URL = 'https://forms.gle/3kXnJuDatTm8bT3x7'
-CONSULTANCY_FORM_URL = 'https://forms.gle/rfHhpD71MjLpET2K9'
-INVESTING_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
-SAVINGS_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
-DEBT_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
-RECOVERY_COURSE_URL = 'https://youtube.com/@ficore.africa?si=myoEpotNALfGK4eI'
-PREDETERMINED_HEADERS = [
-    'Timestamp', 'business_name', 'income_revenue', 'expenses_costs', 'debt_loan',
-    'debt_interest_rate', 'auto_email', 'phone_number', 'first_name', 'last_name',
-    'user_type', 'email', 'badges', 'language'
-]
-
-# Initialize Google Sheets connection
+# Thread-safe Google Sheets client
 sheets = None
+sheets_lock = threading.Lock()
+
 def initialize_sheets(max_retries=5, backoff_factor=2):
     global sheets
-    for attempt in range(max_retries):
-        try:
-            creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
-            if not creds_json:
-                logger.error("GOOGLE_CREDENTIALS_JSON environment variable not set")
-                return False
-            creds_dict = json.loads(creds_json)
-            creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-            client = gspread.authorize(creds)
-            sheets = client.open_by_key(SPREADSHEET_ID)
-            logger.info("Successfully initialized Google Sheets with gspread")
+    with sheets_lock:
+        if sheets is not None:
+            logger.info("Google Sheets already initialized.")
             return True
-        except json.JSONDecodeError as e:
-            logger.error(f"Invalid GOOGLE_CREDENTIALS_JSON format: {e}")
-            return False
-        except gspread.exceptions.APIError as e:
-            logger.error(f"Google Sheets API error on attempt {attempt + 1}: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(backoff_factor ** attempt)
-        except Exception as e:
-            logger.error(f"Attempt {attempt + 1} failed: {e}")
-            if attempt < max_retries - 1:
-                time.sleep(backoff_factor ** attempt)
-    logger.error("Max retries exceeded for Google Sheets initialization")
-    return False
+        for attempt in range(max_retries):
+            try:
+                creds_json = os.environ.get('GOOGLE_CREDENTIALS_JSON')
+                if not creds_json:
+                    logger.critical("GOOGLE_CREDENTIALS_JSON not set.")
+                    return False
+                try:
+                    creds_dict = json.loads(creds_json)
+                except json.JSONDecodeError as e:
+                    logger.error(f"Invalid GOOGLE_CREDENTIALS_JSON format: {e}")
+                    return False
+                creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPE)
+                client = gspread.authorize(creds)
+                sheets = client.open_by_key(SPREADSHEET_ID)
+                logger.info("Successfully initialized Google Sheets.")
+                return True
+            except gspread.exceptions.APIError as e:
+                logger.error(f"Google Sheets API error on attempt {attempt + 1}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(backoff_factor ** attempt)
+            except Exception as e:
+                logger.error(f"Attempt {attempt + 1} failed: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(backoff_factor ** attempt)
+        logger.critical("Max retries exceeded for Google Sheets initialization.")
+        return False
 
 # Initialize sheets at startup
 if not initialize_sheets():
-    logger.error("Failed to initialize Google Sheets. App may not function correctly.")
-    raise Exception("Google Sheets initialization failed.")
+    logger.critical("Failed to initialize Google Sheets. App will not function correctly.")
+    raise RuntimeError("Google Sheets initialization failed.")
 
-# Define Flask-WTF form for user submissions
+# Define Flask-WTF form
 class SubmissionForm(FlaskForm):
     business_name = StringField('Business Name', validators=[DataRequired()])
     income_revenue = StringField('Income Revenue', validators=[DataRequired()])
@@ -392,12 +405,10 @@ class SubmissionForm(FlaskForm):
     language = SelectField('Language', choices=[('English', 'English'), ('Hausa', 'Hausa')], validators=[DataRequired()])
     submit = SubmitField('Submit')
 
-    # Validate email confirmation
     def validate_auto_email(self, auto_email):
         if auto_email.data != self.email.data:
             raise ValidationError('Email addresses must match.')
 
-    # Validate numeric fields
     def validate_income_revenue(self, income_revenue):
         try:
             value = float(re.sub(r'[,]', '', income_revenue.data))
@@ -430,13 +441,12 @@ class SubmissionForm(FlaskForm):
         except ValueError:
             raise ValidationError('Debt Interest Rate must be a valid number.')
 
-# Route to serve favicon
+# Routes
 @app.route('/favicon.ico')
 def favicon():
     logger.info("Serving favicon.ico")
     return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
-# Root route to render submission form
 @app.route('/')
 def home():
     logger.info("Accessing root route")
@@ -444,9 +454,17 @@ def home():
     language = request.args.get('language', 'English')
     if language not in translations:
         language = 'English'
-    return render_template('index.html', form=form, translations=translations, language=language)
+    return render_template(
+        'index.html',
+        form=form,
+        translations=translations,
+        language=language,
+        FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
+        LINKEDIN_URL=LINKEDIN_URL,
+        TWITTER_URL=TWITTER_URL
+    )
 
-# Google Sheets utility functions
+# Google Sheets utilities
 def get_sheet_headers():
     try:
         worksheet = sheets.worksheet('Sheet1')
@@ -454,113 +472,75 @@ def get_sheet_headers():
         logger.debug(f"Fetched headers: {headers}")
         return headers
     except Exception as e:
-        logger.error(f"Error fetching sheet headers with gspread: {e}")
+        logger.error(f"Error fetching sheet headers: {e}")
         return None
 
 def set_sheet_headers():
     try:
         worksheet = sheets.worksheet('Sheet1')
         worksheet.update('A1:N1', [PREDETERMINED_HEADERS])
-        logger.info("Sheet1 headers updated to predetermined values with gspread")
+        logger.info("Sheet1 headers updated.")
         return True
     except Exception as e:
-        logger.error(f"Error setting headers with gspread: {e}")
+        logger.error(f"Error setting headers: {e}")
         return False
-
-def get_row_count():
-    try:
-        worksheet = sheets.worksheet('Sheet1')
-        values = worksheet.get_all_values()
-        return len(values) if values else 0
-    except Exception as e:
-        logger.error(f"Error getting row count with gspread: {e}")
-        return 0
 
 def append_to_sheet(data):
-    try:
-        worksheet = sheets.worksheet('Sheet1')
-        # Check and update headers if necessary
-        current_headers = get_sheet_headers()
-        if not current_headers or current_headers != PREDETERMINED_HEADERS:
-            if not set_sheet_headers():
-                logger.error("Failed to set sheet headers with gspread")
+    with sheets_lock:
+        try:
+            worksheet = sheets.worksheet('Sheet1')
+            current_headers = get_sheet_headers()
+            if not current_headers or current_headers != PREDETERMINED_HEADERS:
+                if not set_sheet_headers():
+                    logger.error("Failed to set sheet headers.")
+                    return False
+            if len(data) != len(PREDETERMINED_HEADERS):
+                logger.error(f"Data length ({len(data)}) does not match headers ({len(PREDETERMINED_HEADERS)}): {data}")
                 return False
-
-        if len(data) != len(PREDETERMINED_HEADERS):
-            logger.error(f"Data length ({len(data)}) does not match headers ({len(PREDETERMINED_HEADERS)}): {data}")
+            worksheet.append_row(data, value_input_option='RAW')
+            logger.info(f"Appended data to sheet: {data}")
+            time.sleep(1)  # Respect API rate limits
+            return True
+        except Exception as e:
+            logger.error(f"Error appending to sheet: {e}")
             return False
 
-        worksheet.append_row(data, value_input_option='RAW')
-        logger.info(f"Appended data to sheet with gspread: {data}")
-        time.sleep(1)  # Respect API rate limits
-        return True
-    except Exception as e:
-        logger.error(f"Error appending to sheet with gspread: {e}")
-        return False
-
-@cache.memoize(timeout=300)  # Cache for 5 minutes
-def fetch_data_from_sheet(email=None, max_retries=5, delay=2):
+@cache.memoize(timeout=300)
+def fetch_data_from_sheet(email=None, max_retries=5, backoff_factor=2):
     for attempt in range(max_retries):
         try:
             worksheet = sheets.worksheet('Sheet1')
             values = worksheet.get_all_values()
             if not values:
-                logger.info(f"Attempt {attempt + 1}: No data found in Google Sheet")
-                if attempt < max_retries - 1:
-                    time.sleep(delay * (2 ** attempt))
-                    continue
+                logger.info(f"Attempt {attempt + 1}: No data in Google Sheet.")
                 return pd.DataFrame(columns=PREDETERMINED_HEADERS)
-
             headers = values[0]
             rows = values[1:] if len(values) > 1 else []
-            expected_columns = PREDETERMINED_HEADERS
-
-            logger.debug(f"Attempt {attempt + 1}: Fetched {len(rows)} rows with headers: {headers}")
-
-            # Adjust rows to match expected columns
-            adjusted_rows = []
-            for row in rows:
-                if len(row) < len(expected_columns):
-                    row.extend([''] * (len(expected_columns) - len(row)))
-                elif len(row) > len(expected_columns):
-                    row = row[:len(expected_columns)]
-                adjusted_rows.append(row)
-
-            df = pd.DataFrame(adjusted_rows, columns=expected_columns)
-
-            for col in expected_columns:
-                if col not in df.columns:
-                    df[col] = ''
-
-            # Set default language to 'English' if empty
-            df['language'] = df['language'].replace('', 'English')
-            valid_languages = list(translations.keys())
-            df['language'] = df['language'].apply(lambda x: x if x in valid_languages else 'English')
-
+            adjusted_rows = [
+                row + [''] * (len(PREDETERMINED_HEADERS) - len(row)) if len(row) < len(PREDETERMINED_HEADERS) else row[:len(PREDETERMINED_HEADERS)]
+                for row in rows
+            ]
+            df = pd.DataFrame(adjusted_rows, columns=PREDETERMINED_HEADERS)
+            df['language'] = df['language'].replace('', 'English').apply(lambda x: x if x in translations else 'English')
             if email:
                 df = df[df['email'] == email]
-
-            logger.info(f"Successfully fetched data: {len(df)} rows for email {email if email else 'all'}")
+            logger.info(f"Fetched {len(df)} rows for email {email if email else 'all'}.")
             return df
         except Exception as e:
             logger.error(f"Attempt {attempt + 1} failed: {e}")
             if attempt < max_retries - 1:
-                time.sleep(delay * (2 ** attempt))
-            continue
-    logger.error("Max retries reached while fetching data with gspread")
+                time.sleep(backoff_factor ** attempt)
+    logger.error("Max retries reached while fetching data.")
     return None
 
-# Calculate financial health score based on user inputs
+# Business logic
 def calculate_health_score(df):
     try:
         if df.empty:
-            logger.warning("Empty DataFrame passed to calculate_health_score.")
+            logger.warning("Empty DataFrame in calculate_health_score.")
             return df
-        
-        # Convert string inputs to floats, handling commas
         for col in ['income_revenue', 'expenses_costs', 'debt_loan', 'debt_interest_rate']:
             df[col] = df[col].apply(lambda x: float(re.sub(r'[,]', '', str(x))) if isinstance(x, str) and x else 0.0)
-
         df['HealthScore'] = 0.0
         df['IncomeRevenueSafe'] = df['income_revenue'].replace(0, 1e-10)
         df['CashFlowRatio'] = (df['income_revenue'] - df['expenses_costs']) / df['IncomeRevenueSafe']
@@ -575,13 +555,11 @@ def calculate_health_score(df):
                             df['NormDebtInterest'] * 0.333) * 100
         df['HealthScore'] = df['HealthScore'].round(2)
 
-        # Assign score descriptions and recommended courses
         def score_description_and_course(row):
             score = row['HealthScore']
             cash_flow = row['CashFlowRatio']
             debt_to_income = row['DebtToIncomeRatio']
             debt_interest = row['DebtInterestBurden']
-            
             if score >= 75:
                 return ('Stable Income; invest excess now',
                         'Ficore Simplified Investing Course: How to Invest in 2025 for Better Gains',
@@ -615,70 +593,49 @@ def calculate_health_score(df):
             score_description_and_course, axis=1, result_type='expand')
         return df
     except Exception as e:
-        logger.error(f"Error calculating health score: {e}")
+        logger.error(f"Error calculating health score: {e}\n{traceback.format_exc()}")
         raise
 
-# Assign badges based on user achievements
 def assign_badges(user_df, all_users_df):
     badges = []
     if user_df.empty:
         logger.warning("Empty user_df in assign_badges.")
         return badges
-    
-    # Sort by Timestamp to get the most recent submission
     try:
         user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
         user_df = user_df.sort_values('Timestamp', ascending=False)
     except Exception as e:
         logger.error(f"Error parsing timestamps in assign_badges: {e}")
         raise
-    
     user_row = user_df.iloc[0]
-    
     email = user_row['email']
     health_score = user_row['HealthScore']
     language = user_row['language']
-    
-    # Validate language
     if language not in translations:
         logger.warning(f"Invalid language '{language}' for user {email}. Defaulting to English.")
         language = 'English'
-    
-    # Badge for first submission
     if len(user_df) == 1:
         badges.append(translations[language]['First Health Score Completed!'])
-    
-    # Badge for stable finances
     if health_score >= 50:
         badges.append(translations[language]['Financial Stability Achieved!'])
-    
-    # Badge for low debt
-    debt_to_income = user_row['DebtToIncomeRatio']
-    if debt_to_income < 0.3:
+    if user_row['DebtToIncomeRatio'] < 0.3:
         badges.append(translations[language]['Debt Slayer!'])
-    
     return badges
 
-# Send email with score report to user
 def send_email(to_email, user_name, health_score, score_description, rank, total_users, course_title, course_url, language):
     try:
-        # Ensure rank is an integer
-        rank = int(rank)
         smtp_server = os.environ.get('SMTP_SERVER')
         smtp_port = int(os.environ.get('SMTP_PORT', 587))
         smtp_user = os.environ.get('SMTP_USER')
         smtp_password = os.environ.get('SMTP_PASSWORD')
-        
         if not all([smtp_server, smtp_port, smtp_user, smtp_password]):
-            logger.error("SMTP configuration environment variables not set.")
+            logger.error("SMTP configuration incomplete.")
             return False
-        
         msg = MIMEMultipart()
         msg['From'] = smtp_user
         msg['To'] = to_email
         subject = translations[language]['Top 10% Subject'] if rank <= total_users * 0.1 else translations[language]['Score Report Subject'].format(user_name=user_name)
         msg['Subject'] = subject
-        
         body = translations[language]['Email Body'].format(
             user_name=user_name,
             health_score=health_score,
@@ -689,35 +646,28 @@ def send_email(to_email, user_name, health_score, score_description, rank, total
             course_title=course_title,
             FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
             WAITLIST_FORM_URL=WAITLIST_FORM_URL,
-            CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL
+            CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL,
+            linkedin_url=LINKEDIN_URL,
+            twitter_url=TWITTER_URL
         )
         msg.attach(MIMEText(body, 'html'))
-        
         with smtplib.SMTP(smtp_server, smtp_port) as server:
             server.starttls()
             server.login(smtp_user, smtp_password)
             server.send_message(msg)
-        
         logger.info(f"Email sent to {to_email}")
         return True
-    except ValueError as e:
-        logger.error(f"Error converting rank to integer: {e}")
-        return False
     except Exception as e:
         logger.error(f"Error sending email to {to_email}: {e}")
         return False
 
-# Generate pie chart for score breakdown
 def generate_breakdown_plot(user_df):
     try:
         if user_df.empty:
             return None
-        
-        # Sort by Timestamp to get the most recent submission
         user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
         user_df = user_df.sort_values('Timestamp', ascending=False)
         user_row = user_df.iloc[0]
-        
         labels = ['Cash Flow', 'Debt-to-Income', 'Debt Interest']
         values = [
             user_row['NormCashFlow'] * 100 / 3,
@@ -736,17 +686,13 @@ def generate_breakdown_plot(user_df):
         logger.error(f"Error generating breakdown plot: {e}")
         return None
 
-# Generate histogram for score comparison
 def generate_comparison_plot(user_df, all_users_df):
     try:
         if user_df.empty or all_users_df.empty:
             return None
-        
-        # Sort by Timestamp to get the most recent submission
         user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
         user_df = user_df.sort_values('Timestamp', ascending=False)
         user_score = user_df.iloc[0]['HealthScore']
-        
         scores = all_users_df['HealthScore'].astype(float)
         fig = px.histogram(
             x=scores,
@@ -766,7 +712,6 @@ def generate_comparison_plot(user_df, all_users_df):
         logger.error(f"Error generating comparison plot: {e}")
         return None
 
-# Handle form submission and render dashboard
 @app.route('/submit', methods=['POST'])
 def submit():
     logger.info("Received /submit request")
@@ -774,22 +719,16 @@ def submit():
     language = form.language.data if form.language.data in translations else 'English'
     
     try:
-        # Validate form inputs
-        logger.info("Validating form submission")
         if not form.validate_on_submit():
             logger.warning(f"Form validation failed: {form.errors}")
             for field, errors in form.errors.items():
                 for error in errors:
-                    # Check if the error is related to CSRF token expiration
                     if 'csrf_token' in field and 'expired' in error.lower():
                         flash(translations[language]['Session Expired'], 'error')
                     else:
                         flash(error, 'error')
             return redirect(url_for('home', language=language))
-        
-        logger.info("Form validated successfully")
-        
-        # Prepare submission data
+
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         data = [
             timestamp,
@@ -804,98 +743,64 @@ def submit():
             form.last_name.data,
             form.user_type.data,
             form.email.data,
-            '',  # Badges (updated later)
+            '',
             form.language.data
         ]
-        
-        # Append data to Google Sheet
-        logger.info("Appending data to Google Sheet")
+
         if not append_to_sheet(data):
             flash(translations[language]['Error saving data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
-        
-        # Fetch all user data
-        logger.info("Fetching all user data from Google Sheet")
+
         all_users_df = fetch_data_from_sheet()
         if all_users_df is None:
             flash(translations[language]['Error retrieving data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
-        
-        # Fetch user-specific data
-        logger.info(f"Fetching user data for email: {form.email.data}")
+
         user_df = fetch_data_from_sheet(email=form.email.data)
         if user_df is None or user_df.empty:
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
-        
-        # Calculate scores
-        logger.info("Calculating health scores")
+
         all_users_df = calculate_health_score(all_users_df)
         user_df = calculate_health_score(user_df)
-        
-        # Assign badges
-        logger.info("Assigning badges")
         badges = assign_badges(user_df, all_users_df)
         user_df['badges'] = ','.join(badges)
-        
-        # Update badges in Google Sheet for the most recent submission
-        logger.info("Updating badges in Google Sheet")
+
         user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
         user_df = user_df.sort_values('Timestamp', ascending=False)
         most_recent_row = user_df.iloc[0]
-        user_row_index = all_users_df[all_users_df['email'] == form.email.data].index
-        if not user_row_index.empty:
-            # Find the index of the most recent submission
+
+        if sheets:
+            worksheet = sheets.worksheet('Sheet1')
             all_users_df['Timestamp'] = pd.to_datetime(all_users_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
             user_rows = all_users_df[all_users_df['email'] == form.email.data]
             most_recent_idx = user_rows['Timestamp'].idxmax()
-            row_index = most_recent_idx + 2  # +2 for header and 1-based indexing
-            if sheets is None:
-                logger.error("Google Sheets not initialized. Cannot update badges.")
-            else:
-                worksheet = sheets.worksheet('Sheet1')
-                worksheet.update(f'M{row_index}', ','.join(badges))
-                time.sleep(1)  # Respect API rate limits
-        
-        # Calculate user rank
-        logger.info("Calculating user rank")
+            row_index = most_recent_idx + 2
+            worksheet.update(f'M{row_index}', ','.join(badges))
+            time.sleep(1)
+
         all_users_df = all_users_df.sort_values('HealthScore', ascending=False).reset_index(drop=True)
         user_rows = all_users_df[all_users_df['email'] == form.email.data]
         if user_rows.empty:
-            logger.error(f"User {form.email.data} not found in all_users_df after submission.")
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
-        # Use the most recent submission for ranking
-        user_rows = user_rows.sort_values('Timestamp', ascending=False)
         user_index = all_users_df.index[all_users_df['email'] == form.email.data].tolist()[0]
         rank = user_index + 1
         total_users = len(all_users_df.drop_duplicates(subset=['email']))
-        
-        # Prepare user_data for the chart
-        logger.info("Preparing user_data for dashboard")
+
         user_data = {
             'income': float(re.sub(r'[,]', '', form.income_revenue.data)) if form.income_revenue.data else 0.0,
             'expenses': float(re.sub(r'[,]', '', form.expenses_costs.data)) if form.expenses_costs.data else 0.0,
             'debt': float(re.sub(r'[,]', '', form.debt_loan.data)) if form.debt_loan.data else 0.0
         }
-        
-        # Use the health_score from the most recent submission
+
         health_score = most_recent_row['HealthScore']
-        
-        # Prepare peer_data (average health score of all users)
-        logger.info("Preparing peer_data for dashboard")
         average_score = all_users_df['HealthScore'].mean() if not all_users_df.empty else 50.0
-        peer_data = {
-            'averageScore': round(average_score, 2)
-        }
-        
-        # Generate dashboard plots
-        logger.info("Generating dashboard plots")
+        peer_data = {'averageScore': round(average_score, 2)}
+
         breakdown_plot = generate_breakdown_plot(user_df)
         comparison_plot = generate_comparison_plot(user_df, all_users_df)
-        
-        # Send score report email
-        logger.info("Sending score report email")
+
         email_sent = send_email(
             to_email=form.email.data,
             user_name=form.first_name.data,
@@ -908,12 +813,11 @@ def submit():
             language=form.language.data
         )
         if not email_sent:
-            logger.warning(f"Failed to send email to {form.email.data}, but proceeding to render dashboard.")
-        
-        # Render dashboard with user data
-        logger.info("Rendering dashboard")
+            logger.warning(f"Failed to send email to {form.email.data}.")
+
+        flash(translations[language]['Submission Success'], 'success')
         return render_template(
-            'dashboard.html',
+            'financial_health_dashboard.html',
             translations=translations,
             language=form.language.data,
             first_name=form.first_name.data,
@@ -932,13 +836,14 @@ def submit():
             personalized_message=most_recent_row['ScoreDescription'],
             FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
             WAITLIST_FORM_URL=WAITLIST_FORM_URL,
-            CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL
+            CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL,
+            LINKEDIN_URL=LINKEDIN_URL,
+            TWITTER_URL=TWITTER_URL
         )
     except Exception as e:
-        logger.error(f"Error processing submission: {str(e)}\n{traceback.format_exc()}")
+        logger.error(f"Error processing submission: {e}\n{traceback.format_exc()}")
         flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
         return redirect(url_for('home', language=language))
 
-# Run Flask app in debug mode for local development
 if __name__ == '__main__':
     app.run(debug=True)
