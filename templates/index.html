@@ -429,7 +429,14 @@
 
         <!-- Contact Information -->
         <div class="text-center my-4">
-            <p>{{ translations[language]['Contact Us'] }} <a href="mailto:ficore.ai.africa@gmail.com" class="btn btn-email">{{ translations[language]['Click to Email'] }}</a> {{ translations[language]['for support'] }}.</p>
+            <p>
+                {{ translations[language]['Contact Us'] }} 
+                <a href="mailto:ficore.ai.africa@gmail.com" style="text-decoration: none; color: #D81B60;">ficore.ai.africa@gmail.com</a> 
+                {{ translations[language]['for support'] }} | 
+                Follow us on 
+                <a href="{{ LINKEDIN_URL }}" target="_blank" style="text-decoration: none; color: #0A66C2;">LinkedIn</a> and 
+                <a href="{{ TWITTER_URL }}" target="_blank" style="text-decoration: none; color: #1DA1F2;">Twitter</a>
+            </p>
         </div>
 
         <!-- Feedback Link -->
