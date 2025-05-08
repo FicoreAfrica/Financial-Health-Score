@@ -1,24 +1,24 @@
-import gspread
-from google.oauth2.service_account import Credentials
+import os
+import logging
+from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Email, ValidationError
 from flask_caching import Cache
-import os
 import pandas as pd
 import smtplib
 import json
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from datetime import datetime
 from dotenv import load_dotenv
 import plotly.express as px
 import time
-import logging
-import traceback
+import gspread
+from google.oauth2.service_account import Credentials
 import re
 import threading
+import traceback
 
 # Configure logging with structured format
 logging.basicConfig(
@@ -771,13 +771,19 @@ def submit():
         most_recent_row = user_df.iloc[0]
 
         if sheets:
-            worksheet = sheets.worksheet('Sheet1')
-            all_users_df['Timestamp'] = pd.to_datetime(all_users_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
-            user_rows = all_users_df[all_users_df['email'] == form.email.data]
-            most_recent_idx = user_rows['Timestamp'].idxmax()
-            row_index = most_recent_idx + 2
-            worksheet.update(f'M{row_index}', ','.join(badges))
-            time.sleep(1)
+            with sheets_lock:
+                worksheet = sheets.worksheet('Sheet1')
+                all_users_df['Timestamp'] = pd.to_datetime(all_users_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
+                user_rows = all_users_df[all_users_df['email'] == form.email.data]
+                most_recent_idx = user_rows['Timestamp'].idxmax()
+                row_index = most_recent_idx + 2
+                try:
+                    worksheet.update(f'M{row_index}', [[','.join(badges)]], value_input_option='RAW')
+                    logger.info(f"Updated badges for row {row_index}: {','.join(badges)}")
+                    time.sleep(1)
+                except Exception as e:
+                    logger.error(f"Failed to update badges for row {row_index}: {e}")
+                    flash("Error updating badges. Dashboard will still display.", 'warning')
 
         all_users_df = all_users_df.sort_values('HealthScore', ascending=False).reset_index(drop=True)
         user_rows = all_users_df[all_users_df['email'] == form.email.data]
@@ -790,7 +796,7 @@ def submit():
 
         user_data = {
             'income': float(re.sub(r'[,]', '', form.income_revenue.data)) if form.income_revenue.data else 0.0,
-            'expenses': float(re.sub(r'[,]', '', form.expenses_costs.data)) if form.expenses_costs.data else 0.0,
+            'expenses': float(re.sub(r'[,]', '', form.expenses_costs.data)) if form.income_revenue.data else 0.0,
             'debt': float(re.sub(r'[,]', '', form.debt_loan.data)) if form.debt_loan.data else 0.0
         }
 
