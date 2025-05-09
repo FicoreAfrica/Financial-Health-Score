@@ -1,7 +1,7 @@
 import os
 import logging
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, session
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, SelectField
 from wtforms.validators import DataRequired, Email, ValidationError
@@ -21,7 +21,6 @@ import threading
 import traceback
 from datetime import datetime
 import traceback
-import session
 import pandas as pd
 
 # Configure logging with structured format
