@@ -12,4 +12,4 @@ flask-wtf==1.2.2
 flask-caching==2.3.0
 reportlab==4.2.2
 email_validator==2.2.0
-flask-session==0.5.0  # Added for server-side session storage
+flask-session==0.6.0  # Added for server-side session storage
