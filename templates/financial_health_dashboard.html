@@ -256,11 +256,15 @@
                         <p>{{ translations[language]['No Badges Yet'] }}</p>
                     {% endif %}
                     <h3>📚 {{ translations[language]['Recommended Learning'] }}</h3>
-                    <a href="{{ course_url }}" target="_blank" class="course-link">{{ course_title }}</a>
-                    <a href="{{ course_url }}" target="_blank" class="enroll-button">{{ translations[language]['Enroll Now'] }}</a>
-                    <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-primary mt-3">Next</a>
-                    <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-secondary mt-3">Back</a>
-                    <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <a href="{{ course_url }}" target="_blank" class="course-link">{{ course_title }}</a>
+                        <a href="{{ course_url }}" target="_blank" class="enroll-button">{{ translations[language]['Enroll Now'] }}</a>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
+                        <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-primary mt-3">Next</a>
+                        <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-secondary mt-3">Back</a>
+                        <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
                 </div>
             </div>
         {% endif %}
