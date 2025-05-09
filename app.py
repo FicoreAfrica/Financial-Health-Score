@@ -152,6 +152,9 @@ translations = {
         'Business Name Required': 'Business name is required.',
         'User Type': 'User Type',
         'Financial Information': 'Financial Information',
+        'Session data missing. Please submit again.': 'Session data is missing. Please submit the form again.',
+        'An unexpected error occurred. Please try again.': 'An unexpected error occurred. Please try again.',
+        'Error generating plots. Dashboard will display without plots.': 'Error generating plots. The dashboard will display without them.',
         'Enter monthly income/revenue': 'Enter monthly income/revenue',
         'Enter monthly expenses/costs': 'Enter monthly expenses/costs',
         'Enter total debt/loan amount': 'Enter total debt/loan amount',
@@ -353,6 +356,9 @@ translations = {
         'First Health Score Completed!': 'Makin Lafiyar Arziki na Farko ya Kammala!',
         'Financial Stability Achieved!': 'Akwai Wadata!',
         'Debt Slayer!': 'Mai Ragargaza Bashi!',
+        'Session data missing. Please submit again.': 'Bayanan zama sun ɓace. Da fatan za a sake yin aikace.',
+        'An unexpected error occurred. Please try again.': 'Wani kuskure wanda ba a zata ba ya faru. Da fatan za a sake gwadawa.',
+        'Error generating plots. Dashboard will display without plots.': 'An sami kuskure wajen ƙirƙirar zane. Allon zai nuna ba tare da su ba.',
         'Submission Success': 'An shigar da bayananka cikin nasara! Duba allon bayananka a ƙasa 👇',
         'Check Inbox': 'Da fatan za a duba akwatin saƙonku Inbox ko foldar na Spam ko Junk idan email ɗin bai zo ba cikin ƴan mintuna.',
         'Your Financial Health Dashboard': 'Allon Lafiyar Kuɗin Ku'
@@ -926,11 +932,11 @@ def dashboard():
         logger.warning(f"Invalid language '{language}', defaulting to English")
         language = 'English'
 
-    # Retrieve data from session (now stored server-side)
+    # Retrieve data from session
     dashboard_data = session.get('dashboard_data', {})
     if not dashboard_data:
         logger.warning("No dashboard data found in session, using defaults")
-        flash(translations[language]['Session data missing. Please submit again.'], 'error')
+        flash(translations[language].get('Session data missing. Please submit again.', 'An error occurred. Please try again.'), 'error')
         return redirect(url_for('home', language=language))
 
     # Extract parameters from session
@@ -946,20 +952,19 @@ def dashboard():
     course_url = dashboard_data.get('course_url', '')
     personalized_message = dashboard_data.get('personalized_message', '')
 
-    # Regenerate plots from stored DataFrames
+    # Regenerate plots from stored DataFrames if needed
     try:
         user_df = pd.DataFrame.from_dict(dashboard_data.get('user_df', {}))
         all_users_df = pd.DataFrame.from_dict(dashboard_data.get('all_users_df', {}))
         breakdown_plot = generate_breakdown_plot(user_df) or '' if not user_df.empty else ''
         comparison_plot = generate_comparison_plot(user_df, all_users_df) or '' if not user_df.empty and not all_users_df.empty else ''
     except Exception as e:
-        logger.error(f"Error regenerating plots: {e}\n{traceback.format_exc()}")
+        logger.error(f"Error regenerating plots: {e}")
         breakdown_plot = ''
         comparison_plot = ''
-        flash("Error generating plots. Dashboard will display without plots.", 'warning')
+        flash(translations[language].get('Error generating plots. Dashboard will display without plots.', 'Error generating plots.'), 'warning')
 
-    # Clear session data after use
-    session.pop('dashboard_data', None)
+    # Do not clear session data here; let it persist for next steps
 
     try:
         return render_template(
@@ -988,8 +993,8 @@ def dashboard():
             TWITTER_URL=TWITTER_URL
         )
     except Exception as e:
-        logger.error(f"Error rendering dashboard template: {e}\n{traceback.format_exc()}")
-        flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
+        logger.error(f"Error rendering dashboard template: {e}")
+        flash(translations[language].get('An unexpected error occurred. Please try again.', 'An error occurred.'), 'error')
         return redirect(url_for('home', language=language))
 
 if __name__ == '__main__':
