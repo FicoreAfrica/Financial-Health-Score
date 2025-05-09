@@ -719,9 +719,17 @@ def submit():
     language = form.language.data if form.language.data in translations else 'English'
     
     # Get the current step from the request, default to 1 if not provided
-    step = request.args.get('step', default=1, type=int)
-    
     try:
+        step = request.args.get('step', default=1, type=int)
+        if step < 1:
+            logger.warning(f"Invalid step value: {step}, resetting to 1")
+            step = 1
+    except ValueError as e:
+        logger.error(f"Error parsing step parameter: {e}")
+        step = 1
+
+    try:
+        # Validate form submission
         if not form.validate_on_submit():
             logger.warning(f"Form validation failed: {form.errors}")
             for field, errors in form.errors.items():
@@ -732,110 +740,176 @@ def submit():
                         flash(error, 'error')
             return redirect(url_for('home', language=language))
 
+        # Create timestamp for submission
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         data = [
             timestamp,
-            form.business_name.data,
-            form.income_revenue.data,
-            form.expenses_costs.data,
-            form.debt_loan.data,
-            form.debt_interest_rate.data,
-            form.auto_email.data,
-            form.phone_number.data,
-            form.first_name.data,
-            form.last_name.data,
-            form.user_type.data,
-            form.email.data,
+            form.business_name.data or '',
+            form.income_revenue.data or '0',
+            form.expenses_costs.data or '0',
+            form.debt_loan.data or '0',
+            form.debt_interest_rate.data or '0',
+            form.auto_email.data or '',
+            form.phone_number.data or '',
+            form.first_name.data or '',
+            form.last_name.data or '',
+            form.user_type.data or '',
+            form.email.data or '',
             '',
-            form.language.data
+            form.language.data or 'English'
         ]
 
+        # Append data to Google Sheets
         if not append_to_sheet(data):
             flash(translations[language]['Error saving data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
+        # Fetch all user data
         all_users_df = fetch_data_from_sheet()
         if all_users_df is None:
             flash(translations[language]['Error retrieving data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
+        # Fetch user-specific data
         user_df = fetch_data_from_sheet(email=form.email.data)
         if user_df is None or user_df.empty:
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        all_users_df = calculate_health_score(all_users_df)
-        user_df = calculate_health_score(user_df)
-        badges = assign_badges(user_df, all_users_df)
-        user_df['badges'] = ','.join(badges)
+        # Calculate health scores
+        try:
+            all_users_df = calculate_health_score(all_users_df)
+            user_df = calculate_health_score(user_df)
+        except Exception as e:
+            logger.error(f"Error calculating health scores: {e}\n{traceback.format_exc()}")
+            flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
+            return redirect(url_for('home', language=language))
 
-        user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
-        user_df = user_df.sort_values('Timestamp', ascending=False)
-        most_recent_row = user_df.iloc[0]
+        # Assign badges
+        try:
+            badges = assign_badges(user_df, all_users_df)
+            user_df['badges'] = ','.join(badges) if badges else ''
+        except Exception as e:
+            logger.error(f"Error assigning badges: {e}\n{traceback.format_exc()}")
+            badges = []
+            user_df['badges'] = ''
+            flash("Error assigning badges. Proceeding with dashboard.", 'warning')
 
-        if sheets:
-            with sheets_lock:
-                worksheet = sheets.worksheet('Sheet1')
-                all_users_df['Timestamp'] = pd.to_datetime(all_users_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
-                user_rows = all_users_df[all_users_df['email'] == form.email.data]
-                most_recent_idx = user_rows['Timestamp'].idxmax()
-                row_index = most_recent_idx + 2
-                try:
-                    worksheet.update(f'M{row_index}', [[','.join(badges)]], value_input_option='RAW')
-                    logger.info(f"Updated badges for row {row_index}: {','.join(badges)}")
-                    time.sleep(1)
-                except Exception as e:
-                    logger.error(f"Failed to update badges for row {row_index}: {e}")
-                    flash("Error updating badges. Dashboard will still display.", 'warning')
-
-        all_users_df = all_users_df.sort_values('HealthScore', ascending=False).reset_index(drop=True)
-        user_rows = all_users_df[all_users_df['email'] == form.email.data]
-        if user_rows.empty:
+        # Sort user_df by timestamp to get the most recent entry
+        try:
+            user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
+            user_df = user_df.sort_values('Timestamp', ascending=False)
+            if user_df.empty:
+                raise ValueError("User DataFrame is empty after sorting")
+            most_recent_row = user_df.iloc[0]
+        except (ValueError, IndexError) as e:
+            logger.error(f"Error sorting user_df or accessing most recent row: {e}\n{traceback.format_exc()}")
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
-        user_index = all_users_df.index[all_users_df['email'] == form.email.data].tolist()[0]
-        rank = user_index + 1
-        total_users = len(all_users_df.drop_duplicates(subset=['email']))
 
-        user_data = {
-            'income': float(re.sub(r'[,]', '', form.income_revenue.data)) if form.income_revenue.data else 0.0,
-            'expenses': float(re.sub(r'[,]', '', form.expenses_costs.data)) if form.income_revenue.data else 0.0,
-            'debt': float(re.sub(r'[,]', '', form.debt_loan.data)) if form.debt_loan.data else 0.0
-        }
+        # Update badges in Google Sheets
+        if sheets:
+            with sheets_lock:
+                try:
+                    worksheet = sheets.worksheet('Sheet1')
+                    all_users_df['Timestamp'] = pd.to_datetime(all_users_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
+                    user_rows = all_users_df[all_users_df['email'] == form.email.data]
+                    if user_rows.empty:
+                        logger.warning(f"No rows found for email {form.email.data} in all_users_df")
+                    else:
+                        most_recent_idx = user_rows['Timestamp'].idxmax()
+                        row_index = most_recent_idx + 2
+                        worksheet.update(f'M{row_index}', [[','.join(badges)]], value_input_option='RAW')
+                        logger.info(f"Updated badges for row {row_index}: {','.join(badges)}")
+                        time.sleep(1)
+                except Exception as e:
+                    logger.error(f"Failed to update badges for row {row_index if 'row_index' in locals() else 'unknown'}: {e}")
+                    flash("Error updating badges. Dashboard will still display.", 'warning')
 
-        health_score = most_recent_row['HealthScore']
-        average_score = all_users_df['HealthScore'].mean() if not all_users_df.empty else 50.0
-        peer_data = {'averageScore': round(average_score, 2)}
+        # Calculate user rank
+        try:
+            all_users_df = all_users_df.sort_values('HealthScore', ascending=False).reset_index(drop=True)
+            user_rows = all_users_df[all_users_df['email'] == form.email.data]
+            if user_rows.empty:
+                flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
+                return redirect(url_for('home', language=language))
+            user_index = all_users_df.index[all_users_df['email'] == form.email.data].tolist()[0]
+            rank = user_index + 1
+            total_users = len(all_users_df.drop_duplicates(subset=['email']))
+        except (IndexError, KeyError) as e:
+            logger.error(f"Error calculating user rank: {e}\n{traceback.format_exc()}")
+            flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
+            return redirect(url_for('home', language=language))
 
-        breakdown_plot = generate_breakdown_plot(user_df)
-        comparison_plot = generate_comparison_plot(user_df, all_users_df)
+        # Prepare user data dictionary
+        try:
+            user_data = {
+                'income': float(re.sub(r'[,]', '', form.income_revenue.data)) if form.income_revenue.data else 0.0,
+                'expenses': float(re.sub(r'[,]', '', form.expenses_costs.data)) if form.expenses_costs.data else 0.0,
+                'debt': float(re.sub(r'[,]', '', form.debt_loan.data)) if form.debt_loan.data else 0.0
+            }
+        except ValueError as e:
+            logger.error(f"Error converting financial data to float: {e}\n{traceback.format_exc()}")
+            user_data = {'income': 0.0, 'expenses': 0.0, 'debt': 0.0}
+            flash("Error processing financial data. Using default values.", 'warning')
 
-        email_sent = send_email(
-            to_email=form.email.data,
-            user_name=form.first_name.data,
-            health_score=health_score,
-            score_description=most_recent_row['ScoreDescription'],
-            rank=rank,
-            total_users=total_users,
-            course_title=most_recent_row['CourseTitle'],
-            course_url=most_recent_row['CourseURL'],
-            language=form.language.data
-        )
-        if not email_sent:
-            logger.warning(f"Failed to send email to {form.email.data}.")
+        # Extract health score and calculate peer data
+        try:
+            health_score = most_recent_row['HealthScore']
+            average_score = all_users_df['HealthScore'].mean() if not all_users_df.empty else 50.0
+            peer_data = {'averageScore': round(average_score, 2)}
+        except KeyError as e:
+            logger.error(f"Error accessing health score: {e}\n{traceback.format_exc()}")
+            health_score = 0.0
+            peer_data = {'averageScore': 50.0}
+            flash("Error calculating health score. Using default values.", 'warning')
+
+        # Generate plots
+        breakdown_plot = generate_breakdown_plot(user_df) or ''
+        comparison_plot = generate_comparison_plot(user_df, all_users_df) or ''
+
+        # Send email notification
+        try:
+            email_sent = send_email(
+                to_email=form.email.data,
+                user_name=form.first_name.data,
+                health_score=health_score,
+                score_description=most_recent_row.get('ScoreDescription', 'N/A'),
+                rank=rank,
+                total_users=total_users,
+                course_title=most_recent_row.get('CourseTitle', ''),
+                course_url=most_recent_row.get('CourseURL', ''),
+                language=form.language.data
+            )
+            if not email_sent:
+                logger.warning(f"Failed to send email to {form.email.data}.")
+        except Exception as e:
+            logger.error(f"Error sending email: {e}\n{traceback.format_exc()}")
+            flash("Error sending email notification. Dashboard will still display.", 'warning')
 
         flash(translations[language]['Submission Success'], 'success')
         
-        # Redirect to the first step of the dashboard with step parameter
-        return redirect(url_for('dashboard', step=1, language=language, first_name=form.first_name.data,
-                               email=form.email.data, user_data=json.dumps(user_data),
-                               health_score=health_score, peer_data=json.dumps(peer_data),
-                               rank=rank, total_users=total_users, badges=json.dumps(badges),
-                               course_title=most_recent_row['CourseTitle'],
-                               course_url=most_recent_row['CourseURL'],
-                               breakdown_plot=breakdown_plot,
-                               comparison_plot=comparison_plot,
-                               personalized_message=most_recent_row['ScoreDescription']))
+        # Prepare parameters for redirect to dashboard
+        dashboard_params = {
+            'step': 1,
+            'language': language,
+            'first_name': form.first_name.data or '',
+            'email': form.email.data or '',
+            'user_data': json.dumps(user_data),
+            'health_score': health_score,
+            'peer_data': json.dumps(peer_data),
+            'rank': rank,
+            'total_users': total_users,
+            'badges': json.dumps(badges),
+            'course_title': most_recent_row.get('CourseTitle', ''),
+            'course_url': most_recent_row.get('CourseURL', ''),
+            'breakdown_plot': breakdown_plot if isinstance(breakdown_plot, str) else '',
+            'comparison_plot': comparison_plot if isinstance(comparison_plot, str) else '',
+            'personalized_message': most_recent_row.get('ScoreDescription', 'N/A')
+        }
+
+        # Redirect to the dashboard route
+        return redirect(url_for('dashboard', **dashboard_params))
 
     except Exception as e:
         logger.error(f"Error processing submission: {e}\n{traceback.format_exc()}")
@@ -846,12 +920,24 @@ def submit():
 @app.route('/dashboard')
 def dashboard():
     logger.info("Accessing dashboard route")
-    step = request.args.get('step', default=1, type=int)
+    
+    # Extract and validate step parameter
+    try:
+        step = request.args.get('step', default=1, type=int)
+        if step < 1:
+            logger.warning(f"Invalid step value: {step}, resetting to 1")
+            step = 1
+    except ValueError as e:
+        logger.error(f"Error parsing step parameter: {e}")
+        step = 1
+
+    # Extract language and ensure it's valid
     language = request.args.get('language', 'English')
     if language not in translations:
+        logger.warning(f"Invalid language '{language}', defaulting to English")
         language = 'English'
 
-    # Extract parameters from the request
+    # Extract parameters from the request with defaults
     first_name = request.args.get('first_name', '')
     email = request.args.get('email', '')
     user_data = request.args.get('user_data', '{}')
@@ -866,45 +952,47 @@ def dashboard():
     comparison_plot = request.args.get('comparison_plot', '')
     personalized_message = request.args.get('personalized_message', '')
 
-    # Parse JSON data
+    # Parse JSON data with error handling
     try:
         user_data = json.loads(user_data)
         peer_data = json.loads(peer_data)
         badges = json.loads(badges)
     except json.JSONDecodeError as e:
-        logger.error(f"Error parsing JSON data: {e}")
+        logger.error(f"Error parsing JSON data in dashboard route: {e}")
         user_data = {}
         peer_data = {}
         badges = []
+        flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
 
-    return render_template(
-        'financial_health_dashboard.html',
-        step=step,
-        translations=translations,
-        language=language,
-        first_name=first_name,
-        last_name='',
-        email=email,
-        user_data=user_data,
-        health_score=health_score,
-        peer_data=peer_data,
-        rank=rank,
-        total_users=total_users,
-        badges=badges,
-        course_title=course_title,
-        course_url=course_url,
-        breakdown_plot=breakdown_plot,
-        comparison_plot=comparison_plot,
-        personalized_message=personalized_message,
-        FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
-        WAITLIST_FORM_URL=WAITLIST_FORM_URL,
-        CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL,
-        LINKEDIN_URL=LINKEDIN_URL,
-        TWITTER_URL=TWITTER_URL
-    )
-    
+    # Render the dashboard template with error handling
+    try:
+        return render_template(
+            'financial_health_dashboard.html',
+            step=step,
+            translations=translations,
+            language=language,
+            first_name=first_name,
+            last_name='',
+            email=email,
+            user_data=user_data,
+            health_score=health_score,
+            peer_data=peer_data,
+            rank=rank,
+            total_users=total_users,
+            badges=badges,
+            course_title=course_title,
+            course_url=course_url,
+            breakdown_plot=breakdown_plot,
+            comparison_plot=comparison_plot,
+            personalized_message=personalized_message,
+            FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
+            WAITLIST_FORM_URL=WAITLIST_FORM_URL,
+            CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL,
+            LINKEDIN_URL=LINKEDIN_URL,
+            TWITTER_URL=TWITTER_URL
+        )
     except Exception as e:
-        logger.error(f"Error processing submission: {e}\n{traceback.format_exc()}")
+        logger.error(f"Error rendering dashboard template: {e}\n{traceback.format_exc()}")
         flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
         return redirect(url_for('home', language=language))
 
