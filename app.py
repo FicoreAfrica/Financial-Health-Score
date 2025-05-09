@@ -19,7 +19,7 @@ from google.oauth2.service_account import Credentials
 import re
 import threading
 import traceback
-from flask_session import Session  # Added for server-side session storage
+from flask_session import Session
 
 # Configure logging with structured format
 logging.basicConfig(
@@ -44,11 +44,12 @@ app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24-hour CSRF token expiration
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
 # Configure server-side session with flask-session
-app.config['SESSION_TYPE'] = 'filesystem'  # Use filesystem for session storage
-app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')  # Directory for session files
-app.config['SESSION_PERMANENT'] = False  # Sessions are not permanent
-app.config['SESSION_USE_SIGNER'] = True  # Sign session cookies for security
-Session(app)  # Initialize flask-session
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')
+app.config['SESSION_PERMANENT'] = False
+app.config['SESSION_USE_SIGNER'] = True
+app.config['SESSION_COOKIE_NAME'] = 'session_id'  # Explicitly set cookie name
+Session(app)
 
 # Create session directory if it doesn't exist
 os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
