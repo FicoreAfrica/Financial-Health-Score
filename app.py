@@ -19,9 +19,7 @@ from google.oauth2.service_account import Credentials
 import re
 import threading
 import traceback
-from datetime import datetime
-import traceback
-import pandas as pd
+from flask_session import Session  # Added for server-side session storage
 
 # Configure logging with structured format
 logging.basicConfig(
@@ -44,6 +42,16 @@ if not app.secret_key:
 # Configure CSRF and caching
 app.config['WTF_CSRF_TIME_LIMIT'] = 86400  # 24-hour CSRF token expiration
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+
+# Configure server-side session with flask-session
+app.config['SESSION_TYPE'] = 'filesystem'  # Use filesystem for session storage
+app.config['SESSION_FILE_DIR'] = os.path.join(app.root_path, 'flask_session')  # Directory for session files
+app.config['SESSION_PERMANENT'] = False  # Sessions are not permanent
+app.config['SESSION_USE_SIGNER'] = True  # Sign session cookies for security
+Session(app)  # Initialize flask-session
+
+# Create session directory if it doesn't exist
+os.makedirs(app.config['SESSION_FILE_DIR'], exist_ok=True)
 
 # Load environment variables
 load_dotenv()
@@ -250,7 +258,7 @@ translations = {
         'Reduce': 'Rage',
         'Reduce Debt': 'Fifita biyan Bashi masu Interest don sauƙaƙe damuwar kuɗi.',
         'Boost': 'Ƙarfafa',
-        'Boost Income': 'Bincika ayyukan a gefe ko ka nemi sabbin hanyoyin samun kuɗi don inganta Arzikinka.',
+        'Boost Income': 'Bincika ayyukan a gefe ko ka nemi sabbin hanyoyin samun kuɗin don inganta Arzikinka.',
         'How You Compare': 'Kwatanta ku da Sauran Masu Amfani da Ficore',
         'Your Rank': 'Matsayin ku',
         'places you': 'ya sanya ku',
@@ -874,7 +882,7 @@ def submit():
 
         flash(translations[language]['Submission Success'], 'success')
         
-        # Store minimal data in session (exclude large plots)
+        # Store data in session (now using server-side storage)
         session['dashboard_data'] = {
             'step': 1,
             'language': language,
@@ -889,7 +897,6 @@ def submit():
             'course_title': most_recent_row.get('CourseTitle', ''),
             'course_url': most_recent_row.get('CourseURL', ''),
             'personalized_message': most_recent_row.get('ScoreDescription', 'N/A'),
-            # Store references to regenerate plots
             'user_df': user_df.to_dict(),  # Convert DataFrame to dict for session storage
             'all_users_df': all_users_df.to_dict()
         }
@@ -918,7 +925,7 @@ def dashboard():
         logger.warning(f"Invalid language '{language}', defaulting to English")
         language = 'English'
 
-    # Retrieve data from session
+    # Retrieve data from session (now stored server-side)
     dashboard_data = session.get('dashboard_data', {})
     if not dashboard_data:
         logger.warning("No dashboard data found in session, using defaults")
