@@ -211,7 +211,7 @@
                         {% else %}{{ translations[language]['Urgent Attention Needed'] }}{% endif %}
                     </p>
                     <p class="note-text">{{ translations[language]['Check Inbox'] }}</p>
-                    <button class="btn btn-primary mt-3" onclick="nextStep(2)">Next</button>
+                    <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-primary mt-3">Next</a>
                     <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                 </div>
             </div>
@@ -236,8 +236,8 @@
                         {% elif health_score >= 50 %}{{ translations[language]['Components Need Attention'] }}
                         {% else %}{{ translations[language]['Components Indicate Challenges'] }}{% endif %}
                     </p>
-                    <button class="btn btn-primary mt-3" onclick="nextStep(3)">Next</button>
-                    <button class="btn btn-secondary mt-3" onclick="nextStep(1)">Back</button>
+                    <a href="{{ url_for('dashboard', step=3, language=language) }}" class="btn btn-primary mt-3">Next</a>
+                    <a href="{{ url_for('dashboard', step=1, language=language) }}" class="btn btn-secondary mt-3">Back</a>
                     <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                 </div>
             </div>
@@ -258,8 +258,8 @@
                     <h3>📚 {{ translations[language]['Recommended Learning'] }}</h3>
                     <a href="{{ course_url }}" target="_blank" class="course-link">{{ course_title }}</a>
                     <a href="{{ course_url }}" target="_blank" class="enroll-button">{{ translations[language]['Enroll Now'] }}</a>
-                    <button class="btn btn-primary mt-3" onclick="nextStep(4)">Next</button>
-                    <button class="btn btn-secondary mt-3" onclick="nextStep(2)">Back</button>
+                    <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-primary mt-3">Next</a>
+                    <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-secondary mt-3">Back</a>
                     <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                 </div>
             </div>
@@ -282,8 +282,8 @@
                             <li><strong>{{ translations[language]['Boost'] }}</strong>: {{ translations[language]['Boost Income'] }} <button class="try-it-btn">Try It</button></li>
                         {% endif %}
                     </ul>
-                    <button class="btn btn-primary mt-3" onclick="nextStep(5)">Next</button>
-                    <button class="btn btn-secondary mt-3" onclick="nextStep(3)">Back</button>
+                    <a href="{{ url_for('dashboard', step=5, language=language) }}" class="btn btn-primary mt-3">Next</a>
+                    <a href="{{ url_for('dashboard', step=3, language=language) }}" class="btn btn-secondary mt-3">Back</a>
                     <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                 </div>
             </div>
@@ -305,8 +305,8 @@
                         {% else %}{{ translations[language]['Lower Range'] }}{% endif %}
                         {{ translations[language]['Regular Submissions'] }}
                     </p>
-                    <button class="btn btn-primary mt-3" onclick="nextStep(6)">Next</button>
-                    <button class="btn btn-secondary mt-3" onclick="nextStep(4)">Back</button>
+                    <a href="{{ url_for('dashboard', step=6, language=language) }}" class="btn btn-primary mt-3">Next</a>
+                    <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-secondary mt-3">Back</a>
                     <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                 </div>
             </div>
@@ -339,12 +339,6 @@
 
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script>
-        let step = {{ step | default(1) }};
-        function nextStep(next) {
-            step = next;
-            window.location.href = `?step=${step}&language=${encodeURIComponent('{{ language }}')}`;
-        }
-
         // Chart Data Setup (same as your original, enhanced with tooltips)
         const chartDataElement = document.getElementById('chart-data');
         let userData = JSON.parse(chartDataElement.dataset.user || '{}');
@@ -393,7 +387,7 @@
 
         // Dynamic Background based on step
         const backgrounds = ['#E3F2FD', '#F5F7FA', '#E8F5E9', '#FFF3E0', '#ECEFF1', '#E0F7FA'];
-        document.body.style.background = backgrounds[step - 1];
+        document.body.style.background = backgrounds[{{ step - 1 }}];
     </script>
 </body>
 </html>
