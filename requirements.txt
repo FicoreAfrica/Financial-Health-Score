@@ -1,4 +1,4 @@
-Flask==3.1.0
+Flask==3.0.3  # Updated from 3.1.0 to match latest valid version
 gunicorn==23.0.0
 google-api-python-client==2.167.0
 google-auth==2.39.0
