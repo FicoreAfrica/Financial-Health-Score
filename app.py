@@ -718,6 +718,9 @@ def submit():
     form = SubmissionForm()
     language = form.language.data if form.language.data in translations else 'English'
     
+    # Get the current step from the request, default to 1 if not provided
+    step = request.args.get('step', default=1, type=int)
+    
     try:
         if not form.validate_on_submit():
             logger.warning(f"Form validation failed: {form.errors}")
@@ -822,30 +825,84 @@ def submit():
             logger.warning(f"Failed to send email to {form.email.data}.")
 
         flash(translations[language]['Submission Success'], 'success')
-        return render_template(
-            'financial_health_dashboard.html',
-            translations=translations,
-            language=form.language.data,
-            first_name=form.first_name.data,
-            last_name=form.last_name.data or '',
-            email=form.email.data,
-            user_data=user_data,
-            health_score=health_score,
-            peer_data=peer_data,
-            rank=rank,
-            total_users=total_users,
-            badges=badges,
-            course_title=most_recent_row['CourseTitle'],
-            course_url=most_recent_row['CourseURL'],
-            breakdown_plot=breakdown_plot,
-            comparison_plot=comparison_plot,
-            personalized_message=most_recent_row['ScoreDescription'],
-            FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
-            WAITLIST_FORM_URL=WAITLIST_FORM_URL,
-            CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL,
-            LINKEDIN_URL=LINKEDIN_URL,
-            TWITTER_URL=TWITTER_URL
-        )
+        
+        # Redirect to the first step of the dashboard with step parameter
+        return redirect(url_for('dashboard', step=1, language=language, first_name=form.first_name.data,
+                               email=form.email.data, user_data=json.dumps(user_data),
+                               health_score=health_score, peer_data=json.dumps(peer_data),
+                               rank=rank, total_users=total_users, badges=json.dumps(badges),
+                               course_title=most_recent_row['CourseTitle'],
+                               course_url=most_recent_row['CourseURL'],
+                               breakdown_plot=breakdown_plot,
+                               comparison_plot=comparison_plot,
+                               personalized_message=most_recent_row['ScoreDescription']))
+
+    except Exception as e:
+        logger.error(f"Error processing submission: {e}\n{traceback.format_exc()}")
+        flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
+        return redirect(url_for('home', language=language))
+
+# Add a new route for the dashboard to handle step navigation
+@app.route('/dashboard')
+def dashboard():
+    logger.info("Accessing dashboard route")
+    step = request.args.get('step', default=1, type=int)
+    language = request.args.get('language', 'English')
+    if language not in translations:
+        language = 'English'
+
+    # Extract parameters from the request
+    first_name = request.args.get('first_name', '')
+    email = request.args.get('email', '')
+    user_data = request.args.get('user_data', '{}')
+    health_score = request.args.get('health_score', 0, type=float)
+    peer_data = request.args.get('peer_data', '{}')
+    rank = request.args.get('rank', 0, type=int)
+    total_users = request.args.get('total_users', 0, type=int)
+    badges = request.args.get('badges', '[]')
+    course_title = request.args.get('course_title', '')
+    course_url = request.args.get('course_url', '')
+    breakdown_plot = request.args.get('breakdown_plot', '')
+    comparison_plot = request.args.get('comparison_plot', '')
+    personalized_message = request.args.get('personalized_message', '')
+
+    # Parse JSON data
+    try:
+        user_data = json.loads(user_data)
+        peer_data = json.loads(peer_data)
+        badges = json.loads(badges)
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parsing JSON data: {e}")
+        user_data = {}
+        peer_data = {}
+        badges = []
+
+    return render_template(
+        'financial_health_dashboard.html',
+        step=step,
+        translations=translations,
+        language=language,
+        first_name=first_name,
+        last_name='',
+        email=email,
+        user_data=user_data,
+        health_score=health_score,
+        peer_data=peer_data,
+        rank=rank,
+        total_users=total_users,
+        badges=badges,
+        course_title=course_title,
+        course_url=course_url,
+        breakdown_plot=breakdown_plot,
+        comparison_plot=comparison_plot,
+        personalized_message=personalized_message,
+        FEEDBACK_FORM_URL=FEEDBACK_FORM_URL,
+        WAITLIST_FORM_URL=WAITLIST_FORM_URL,
+        CONSULTANCY_FORM_URL=CONSULTANCY_FORM_URL,
+        LINKEDIN_URL=LINKEDIN_URL,
+        TWITTER_URL=TWITTER_URL
+    )
+    
     except Exception as e:
         logger.error(f"Error processing submission: {e}\n{traceback.format_exc()}")
         flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
