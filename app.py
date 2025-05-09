@@ -19,6 +19,10 @@ from google.oauth2.service_account import Credentials
 import re
 import threading
 import traceback
+from datetime import datetime
+import traceback
+import session
+import pandas as pd
 
 # Configure logging with structured format
 logging.basicConfig(
@@ -718,7 +722,6 @@ def submit():
     form = SubmissionForm()
     language = form.language.data if form.language.data in translations else 'English'
     
-    # Get the current step from the request, default to 1 if not provided
     try:
         step = request.args.get('step', default=1, type=int)
         if step < 1:
@@ -729,7 +732,6 @@ def submit():
         step = 1
 
     try:
-        # Validate form submission
         if not form.validate_on_submit():
             logger.warning(f"Form validation failed: {form.errors}")
             for field, errors in form.errors.items():
@@ -740,7 +742,6 @@ def submit():
                         flash(error, 'error')
             return redirect(url_for('home', language=language))
 
-        # Create timestamp for submission
         timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         data = [
             timestamp,
@@ -759,24 +760,20 @@ def submit():
             form.language.data or 'English'
         ]
 
-        # Append data to Google Sheets
         if not append_to_sheet(data):
             flash(translations[language]['Error saving data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        # Fetch all user data
         all_users_df = fetch_data_from_sheet()
         if all_users_df is None:
             flash(translations[language]['Error retrieving data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        # Fetch user-specific data
         user_df = fetch_data_from_sheet(email=form.email.data)
         if user_df is None or user_df.empty:
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        # Calculate health scores
         try:
             all_users_df = calculate_health_score(all_users_df)
             user_df = calculate_health_score(user_df)
@@ -785,7 +782,6 @@ def submit():
             flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        # Assign badges
         try:
             badges = assign_badges(user_df, all_users_df)
             user_df['badges'] = ','.join(badges) if badges else ''
@@ -795,7 +791,6 @@ def submit():
             user_df['badges'] = ''
             flash("Error assigning badges. Proceeding with dashboard.", 'warning')
 
-        # Sort user_df by timestamp to get the most recent entry
         try:
             user_df['Timestamp'] = pd.to_datetime(user_df['Timestamp'], format='mixed', dayfirst=True, errors='coerce')
             user_df = user_df.sort_values('Timestamp', ascending=False)
@@ -807,7 +802,6 @@ def submit():
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        # Update badges in Google Sheets
         if sheets:
             with sheets_lock:
                 try:
@@ -826,7 +820,6 @@ def submit():
                     logger.error(f"Failed to update badges for row {row_index if 'row_index' in locals() else 'unknown'}: {e}")
                     flash("Error updating badges. Dashboard will still display.", 'warning')
 
-        # Calculate user rank
         try:
             all_users_df = all_users_df.sort_values('HealthScore', ascending=False).reset_index(drop=True)
             user_rows = all_users_df[all_users_df['email'] == form.email.data]
@@ -841,7 +834,6 @@ def submit():
             flash(translations[language]['Error retrieving user data. Please try again.'], 'error')
             return redirect(url_for('home', language=language))
 
-        # Prepare user data dictionary
         try:
             user_data = {
                 'income': float(re.sub(r'[,]', '', form.income_revenue.data)) if form.income_revenue.data else 0.0,
@@ -853,7 +845,6 @@ def submit():
             user_data = {'income': 0.0, 'expenses': 0.0, 'debt': 0.0}
             flash("Error processing financial data. Using default values.", 'warning')
 
-        # Extract health score and calculate peer data
         try:
             health_score = most_recent_row['HealthScore']
             average_score = all_users_df['HealthScore'].mean() if not all_users_df.empty else 50.0
@@ -864,11 +855,6 @@ def submit():
             peer_data = {'averageScore': 50.0}
             flash("Error calculating health score. Using default values.", 'warning')
 
-        # Generate plots
-        breakdown_plot = generate_breakdown_plot(user_df) or ''
-        comparison_plot = generate_comparison_plot(user_df, all_users_df) or ''
-
-        # Send email notification
         try:
             email_sent = send_email(
                 to_email=form.email.data,
@@ -889,39 +875,36 @@ def submit():
 
         flash(translations[language]['Submission Success'], 'success')
         
-        # Prepare parameters for redirect to dashboard
-        dashboard_params = {
+        # Store minimal data in session (exclude large plots)
+        session['dashboard_data'] = {
             'step': 1,
             'language': language,
             'first_name': form.first_name.data or '',
             'email': form.email.data or '',
-            'user_data': json.dumps(user_data),
+            'user_data': user_data,
             'health_score': health_score,
-            'peer_data': json.dumps(peer_data),
+            'peer_data': peer_data,
             'rank': rank,
             'total_users': total_users,
-            'badges': json.dumps(badges),
+            'badges': badges,
             'course_title': most_recent_row.get('CourseTitle', ''),
             'course_url': most_recent_row.get('CourseURL', ''),
-            'breakdown_plot': breakdown_plot if isinstance(breakdown_plot, str) else '',
-            'comparison_plot': comparison_plot if isinstance(comparison_plot, str) else '',
-            'personalized_message': most_recent_row.get('ScoreDescription', 'N/A')
+            'personalized_message': most_recent_row.get('ScoreDescription', 'N/A'),
+            # Store references to regenerate plots
+            'user_df': user_df.to_dict(),  # Convert DataFrame to dict for session storage
+            'all_users_df': all_users_df.to_dict()
         }
-
-        # Redirect to the dashboard route
-        return redirect(url_for('dashboard', **dashboard_params))
+        return redirect(url_for('dashboard'))
 
     except Exception as e:
         logger.error(f"Error processing submission: {e}\n{traceback.format_exc()}")
         flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
         return redirect(url_for('home', language=language))
 
-# Add a new route for the dashboard to handle step navigation
 @app.route('/dashboard')
 def dashboard():
     logger.info("Accessing dashboard route")
     
-    # Extract and validate step parameter
     try:
         step = request.args.get('step', default=1, type=int)
         if step < 1:
@@ -931,40 +914,46 @@ def dashboard():
         logger.error(f"Error parsing step parameter: {e}")
         step = 1
 
-    # Extract language and ensure it's valid
     language = request.args.get('language', 'English')
     if language not in translations:
         logger.warning(f"Invalid language '{language}', defaulting to English")
         language = 'English'
 
-    # Extract parameters from the request with defaults
-    first_name = request.args.get('first_name', '')
-    email = request.args.get('email', '')
-    user_data = request.args.get('user_data', '{}')
-    health_score = request.args.get('health_score', 0, type=float)
-    peer_data = request.args.get('peer_data', '{}')
-    rank = request.args.get('rank', 0, type=int)
-    total_users = request.args.get('total_users', 0, type=int)
-    badges = request.args.get('badges', '[]')
-    course_title = request.args.get('course_title', '')
-    course_url = request.args.get('course_url', '')
-    breakdown_plot = request.args.get('breakdown_plot', '')
-    comparison_plot = request.args.get('comparison_plot', '')
-    personalized_message = request.args.get('personalized_message', '')
+    # Retrieve data from session
+    dashboard_data = session.get('dashboard_data', {})
+    if not dashboard_data:
+        logger.warning("No dashboard data found in session, using defaults")
+        flash(translations[language]['Session data missing. Please submit again.'], 'error')
+        return redirect(url_for('home', language=language))
 
-    # Parse JSON data with error handling
+    # Extract parameters from session
+    first_name = dashboard_data.get('first_name', '')
+    email = dashboard_data.get('email', '')
+    user_data = dashboard_data.get('user_data', {})
+    health_score = dashboard_data.get('health_score', 0)
+    peer_data = dashboard_data.get('peer_data', {})
+    rank = dashboard_data.get('rank', 0)
+    total_users = dashboard_data.get('total_users', 0)
+    badges = dashboard_data.get('badges', [])
+    course_title = dashboard_data.get('course_title', '')
+    course_url = dashboard_data.get('course_url', '')
+    personalized_message = dashboard_data.get('personalized_message', '')
+
+    # Regenerate plots from stored DataFrames
     try:
-        user_data = json.loads(user_data)
-        peer_data = json.loads(peer_data)
-        badges = json.loads(badges)
-    except json.JSONDecodeError as e:
-        logger.error(f"Error parsing JSON data in dashboard route: {e}")
-        user_data = {}
-        peer_data = {}
-        badges = []
-        flash(translations[language]['An unexpected error occurred. Please try again.'], 'error')
+        user_df = pd.DataFrame.from_dict(dashboard_data.get('user_df', {}))
+        all_users_df = pd.DataFrame.from_dict(dashboard_data.get('all_users_df', {}))
+        breakdown_plot = generate_breakdown_plot(user_df) or '' if not user_df.empty else ''
+        comparison_plot = generate_comparison_plot(user_df, all_users_df) or '' if not user_df.empty and not all_users_df.empty else ''
+    except Exception as e:
+        logger.error(f"Error regenerating plots: {e}\n{traceback.format_exc()}")
+        breakdown_plot = ''
+        comparison_plot = ''
+        flash("Error generating plots. Dashboard will display without plots.", 'warning')
 
-    # Render the dashboard template with error handling
+    # Clear session data after use
+    session.pop('dashboard_data', None)
+
     try:
         return render_template(
             'financial_health_dashboard.html',
@@ -997,4 +986,5 @@ def dashboard():
         return redirect(url_for('home', language=language))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=True)
