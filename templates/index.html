@@ -98,12 +98,15 @@
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
         .btn-email {
-            background: linear-gradient(135deg, #FF5722, #D81B60);
+            background: linear-gradient(135deg, #0288D1, #01579B);
             border: none;
             padding: 10px;
             font-weight: 500;
             border-radius: 8px;
             transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
+            color: white;
+            display: inline-block;
         }
         .btn-email:hover {
             transform: translateY(-2px);
@@ -431,7 +434,7 @@
         <div class="text-center my-4">
             <p>
                 {{ translations[language]['Contact Us'] }} 
-                <a href="mailto:ficore.ai.africa@gmail.com" style="text-decoration: none; color: #D81B60;">ficore.ai.africa@gmail.com</a> 
+                <a href="mailto:ficore.ai.africa@gmail.com" class="btn-email">Email Us</a> 
                 {{ translations[language]['for support'] }} | 
                 Follow us on 
                 <a href="{{ LINKEDIN_URL }}" target="_blank" style="text-decoration: none; color: #0A66C2;">LinkedIn</a> and 
