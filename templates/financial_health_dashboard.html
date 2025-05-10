@@ -193,7 +193,7 @@
             background: #2E7D32;
             transform: translateY(-2px);
         }
-        .btn-primary::after {
+        .btn-primary:not(.no-arrow)::after {
             content: '→'; /* Right arrow for Next buttons */
             margin-left: 8px;
         }
@@ -204,6 +204,10 @@
         .btn-secondary:hover {
             background: #EF6C00;
             transform: translateY(-2px);
+        }
+        .btn-secondary::after {
+            content: '←'; /* Left arrow for Back buttons */
+            margin-right: 8px;
         }
         .course-link, .enroll-button {
             padding: 10px 20px;
@@ -451,7 +455,7 @@
                         <a href="{{ TWITTER_URL }}" target="_blank" style="color: #1DA1F2;">Twitter</a>
                     </div>
                     <div class="d-flex flex-wrap justify-content-center gap-2">
-                        <a href="{{ url_for('home') }}" class="btn btn-primary">{{ translations[language]['Back to Home'] }}</a>
+                        <a href="{{ url_for('home') }}" class="btn btn-primary no-arrow">{{ translations[language]['Back to Home'] }}</a>
                         <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                     </div>
                 </div>
