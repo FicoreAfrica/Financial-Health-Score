@@ -519,10 +519,13 @@ def append_to_sheet(data):
             logger.info(f"Appended data to sheet: {data}")
             time.sleep(1)  # Respect API rate limits
             return True
-        except Exception as e:
-            logger.error(f"Error appending to sheet: {e}")
+        except gspread.exceptions.APIError as api_err:
+            logger.error(f"Google Sheets API error appending to sheet: {api_err}")
             return False
-
+        except Exception as e:
+            logger.error(f"Unexpected error appending to sheet: {e}")
+            return False
+            
 @cache.memoize(timeout=300)
 def fetch_data_from_sheet(email=None, max_retries=5, backoff_factor=2):
     for attempt in range(max_retries):
