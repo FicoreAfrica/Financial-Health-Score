@@ -15,7 +15,7 @@
             font-family: 'Noto Sans', sans-serif;
             background: linear-gradient(135deg, #E3F2FD, #F5F7FA);
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             box-sizing: border-box;
             overflow-x: hidden;
             transition: background 0.5s ease;
@@ -27,12 +27,12 @@
         .progress-tracker {
             display: flex;
             justify-content: center;
-            gap: 20px;
+            gap: 15px;
             margin-bottom: 20px;
         }
         .step {
-            width: 30px;
-            height: 30px;
+            width: 35px;
+            height: 35px;
             background: #E0E0E0;
             border-radius: 50%;
             display: flex;
@@ -40,6 +40,7 @@
             justify-content: center;
             color: #666;
             font-weight: 600;
+            font-size: 1.1rem;
             transition: background 0.3s ease, color 0.3s ease;
         }
         .step.active {
@@ -52,25 +53,26 @@
         }
         .card {
             background: #fff;
-            border-radius: 15px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
             margin-bottom: 1.5rem;
+            border: 1px solid #E0E0E0;
             opacity: 0;
             transform: translateY(20px);
             animation: slideIn 0.5s forwards;
-            border: 1px solid #E0E0E0;
         }
         @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .card-header {
             background: linear-gradient(135deg, #28A745, #1E88E5);
             color: white;
-            padding: 1.5rem;
-            border-radius: 15px 15px 0 0;
+            padding: 1.2rem;
+            border-radius: 12px 12px 0 0;
             text-align: center;
             font-weight: 700;
-            font-size: 2rem;
+            font-size: 1.8rem;
             position: relative;
             overflow: hidden;
         }
@@ -89,60 +91,122 @@
             100% { transform: rotate(360deg); }
         }
         .card-body {
-            padding: 1.5rem;
+            padding: 1.2rem;
+        }
+        .info-box {
+            background: #E3F2FD;
+            border: 2px solid #1E88E5;
+            border-radius: 8px;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 1rem;
+            text-align: center;
+        }
+        .score-box {
+            background: #E8F5E9;
+            border: 2px solid #28A745;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            font-size: 1.1rem;
+            text-align: center;
+            color: #2E7D32;
+        }
+        .badge-box {
+            background: #E1F5FE;
+            border: 2px solid #0288D1;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .learning-box {
+            background: #FFF3E0;
+            border: 2px solid #F57C00;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+        }
+        .tips-list {
+            list-style: none;
+            padding: 0;
+        }
+        .tips-list li {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 1rem;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .email-btn {
+            background: #0288D1;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            text-decoration: none;
+            transition: transform 0.3s ease;
+            display: inline-block;
+        }
+        .email-btn:hover {
+            transform: translateY(-2px);
+            background: #0277BD;
         }
         .badge {
-            display: inline-block;
             background: #42A5F5;
             color: white;
-            padding: 10px 15px;
-            border-radius: 25px;
+            padding: 8px 12px;
+            border-radius: 20px;
             margin: 5px;
-            font-size: 1rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            font-size: 0.95rem;
+            transition: transform 0.3s ease;
             border: 1px solid #1565C0;
             cursor: pointer;
         }
         .badge:hover {
-            transform: scale(1.15);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transform: scale(1.1);
         }
         .btn-primary, .btn-secondary {
             padding: 12px 25px;
             font-weight: 600;
-            border-radius: 10px;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: transform 0.3s ease;
+            touch-action: manipulation;
         }
         .btn-primary {
-            background: linear-gradient(135deg, #28A745, #1E88E5);
+            background: #28A745;
+            border: none;
         }
         .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+            background: #2E7D32;
+            transform: translateY(-2px);
         }
         .btn-secondary {
-            background: linear-gradient(135deg, #F57C00, #FF9800);
+            background: #F57C00;
+            border: none;
         }
         .btn-secondary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.3);
+            background: #EF6C00;
+            transform: translateY(-2px);
         }
         .course-link, .enroll-button {
-            padding: 12px 25px;
+            padding: 10px 20px;
             font-weight: 600;
-            border-radius: 10px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            background: #FFC107;
+            color: black;
+            text-decoration: none;
             transition: transform 0.3s ease;
         }
-        .course-link {
-            background: #FFC107;
-            color: black;
-        }
-        .enroll-button {
-            background: #FFC107;
-            color: black;
-        }
         .course-link:hover, .enroll-button:hover {
-            transform: translateY(-3px);
+            transform: translateY(-2px);
+            background: #FFB300;
         }
         .try-it-btn {
             background: #4CAF50;
@@ -156,12 +220,12 @@
             transform: translateY(-2px);
         }
         .chart-container {
-            position: relative;
-            min-height: 350px;
+            min-height: 300px;
+            max-width: 100%;
         }
         #score-breakdown-chart, #compare-others-chart {
             width: 100%;
-            height: 350px;
+            height: 300px;
         }
         .voice-btn {
             background: #9C27B0;
@@ -175,10 +239,17 @@
             transform: translateY(-2px);
         }
         @media (max-width: 600px) {
-            .card-header { font-size: 1.5rem; padding: 1rem; }
-            .badge { font-size: 0.85rem; padding: 8px 10px; }
-            .btn-primary, .btn-secondary { padding: 10px 20px; }
-            #score-breakdown-chart, #compare-others-chart { height: 250px; }
+            body { padding: 10px; }
+            .card-header { font-size: 1.4rem; padding: 0.8rem; }
+            .card-body { padding: 0.8rem; }
+            .info-box, .score-box, .badge-box, .learning-box { font-size: 0.9rem; padding: 8px; }
+            .tips-list li { font-size: 0.9rem; padding: 8px; }
+            .btn-primary, .btn-secondary { padding: 10px 20px; font-size: 0.9rem; }
+            .badge { font-size: 0.8rem; padding: 6px 10px; }
+            #score-breakdown-chart, #compare-others-chart { height: 220px; }
+            .progress-tracker { gap: 10px; }
+            .step { width: 30px; height: 30px; font-size: 1rem; }
+            .email-btn { font-size: 0.85rem; padding: 6px 12px; }
         }
     </style>
 </head>
@@ -199,20 +270,24 @@
             <div class="card">
                 <div class="card-header">🎉 {{ translations[language]['Welcome'] }}, {{ first_name }}!</div>
                 <div class="card-body">
-                    <p class="success-message">{{ translations[language]['Submission Success'] }}</p>
-                    <p>{{ translations[language]['Email'] }}: {{ email }}</p>
-                    <h3>⭐ {{ translations[language]['Your Financial Health Score'] }}</h3>
-                    <p class="result-text">{{ health_score }}/100</p>
-                    <p class="result-text">{{ translations[language]['Ranked'] }} #{{ rank }} {{ translations[language]['out of'] }} {{ total_users }} {{ translations[language]['users'] }}</p>
-                    <p class="result-text">
+                    <div class="info-box">{{ translations[language]['Submission Success'] }}</div>
+                    <div class="info-box">{{ translations[language]['Email'] }}: {{ email }}</div>
+                    <div class="score-box">
+                        <h3>⭐ {{ translations[language]['Your Financial Health Score'] }}</h3>
+                        <p>{{ health_score }}/100</p>
+                    </div>
+                    <div class="info-box">{{ translations[language]['Ranked'] }} #{{ rank }} {{ translations[language]['out of'] }} {{ total_users }} {{ translations[language]['users'] }}</div>
+                    <div class="info-box">
                         {% if health_score >= 75 %}{{ translations[language]['Strong Financial Health'] }}
                         {% elif health_score >= 50 %}{{ translations[language]['Stable Finances'] }}
                         {% elif health_score >= 25 %}{{ translations[language]['Financial Strain'] }}
                         {% else %}{{ translations[language]['Urgent Attention Needed'] }}{% endif %}
-                    </p>
-                    <p class="note-text">{{ translations[language]['Check Inbox'] }}</p>
-                    <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-primary mt-3">Next</a>
-                    <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
+                    <div class="info-box">{{ translations[language]['Check Inbox'] }}</div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-primary">Next</a>
+                        <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -225,20 +300,24 @@
                     <div class="chart-container">
                         <div id="score-breakdown-chart"></div>
                     </div>
-                    <p class="insight-text">
-                        {{ translations[language]['Score Composition'] }}:
+                    <div class="score-box">
+                        <h4>{{ translations[language]['Score Composition'] }}:</h4>
                         <ul>
-                            <li><strong>{{ translations[language]['Cash Flow'] }}</strong>: {{ translations[language]['Cash Flow Description'] }}</li>
-                            <li><strong>{{ translations[language]['Debt-to-Income Ratio'] }}</strong>: {{ translations[language]['Debt-to-Income Description'] }}</li>
+                            <li><strong>{{ translations[language]['Cash Flow'] }}</strong>: {{ userData.income - userData.expenses }} ₦</li>
+                            <li><strong>{{ translations[language]['Debt-to-Income Ratio'] }}</strong>: {{ (userData.debt / userData.income * 100).toFixed(1) }}%</li>
                             <li><strong>{{ translations[language]['Debt Interest Burden'] }}</strong>: {{ translations[language]['Debt Interest Description'] }}</li>
                         </ul>
-                        {% if health_score >= 75 %}{{ translations[language]['Balanced Components'] }}
-                        {% elif health_score >= 50 %}{{ translations[language]['Components Need Attention'] }}
-                        {% else %}{{ translations[language]['Components Indicate Challenges'] }}{% endif %}
-                    </p>
-                    <a href="{{ url_for('dashboard', step=3, language=language) }}" class="btn btn-primary mt-3">Next</a>
-                    <a href="{{ url_for('dashboard', step=1, language=language) }}" class="btn btn-secondary mt-3">Back</a>
-                    <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                        <p>
+                            {% if health_score >= 75 %}{{ translations[language]['Balanced Components'] }}
+                            {% elif health_score >= 50 %}{{ translations[language]['Components Need Attention'] }}
+                            {% else %}{{ translations[language]['Components Indicate Challenges'] }}{% endif %}
+                        </p>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ url_for('dashboard', step=3, language=language) }}" class="btn btn-primary">Next</a>
+                        <a href="{{ url_for('dashboard', step=1, language=language) }}" class="btn btn-secondary">Back</a>
+                        <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -248,22 +327,26 @@
             <div class="card">
                 <div class="card-header">🏅 {{ translations[language]['Your Badges'] }}</div>
                 <div class="card-body">
-                    {% if badges %}
-                        {% for badge in badges %}
-                            <span class="badge" onclick="this.style.background = '#FF5722'; alert('Congrats on {{ translations[language].get(badge, badge) }}!')">{{ translations[language].get(badge, badge) }}</span>
-                        {% endfor %}
-                    {% else %}
-                        <p>{{ translations[language]['No Badges Yet'] }}</p>
-                    {% endif %}
-                    <h3>📚 {{ translations[language]['Recommended Learning'] }}</h3>
-                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <a href="{{ course_url }}" target="_blank" class="course-link">{{ course_title }}</a>
-                        <a href="{{ course_url }}" target="_blank" class="enroll-button">{{ translations[language]['Enroll Now'] }}</a>
+                    <div class="badge-box">
+                        {% if badges %}
+                            {% for badge in badges %}
+                                <span class="badge" onclick="alert('Congrats on {{ translations[language].get(badge, badge) }}!')">{{ translations[language].get(badge, badge) }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <p>{{ translations[language]['No Badges Yet'] }}</p>
+                        {% endif %}
                     </div>
-                    <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-primary mt-3">Next</a>
-                        <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-secondary mt-3">Back</a>
-                        <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    <div class="learning-box">
+                        <h3>📚 {{ translations[language]['Recommended Learning'] }}</h3>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            <a href="{{ course_url }}" target="_blank" class="course-link">{{ course_title }}</a>
+                            <a href="{{ course_url }}" target="_blank" class="enroll-button">{{ translations[language]['Enroll Now'] }}</a>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-primary">Next</a>
+                        <a href="{{ url_for('dashboard', step=2, language=language) }}" class="btn btn-secondary">Back</a>
+                        <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
                     </div>
                 </div>
             </div>
@@ -274,21 +357,41 @@
             <div class="card">
                 <div class="card-header">💡 {{ translations[language]['Quick Financial Tips'] }}</div>
                 <div class="card-body">
-                    <ul class="tips-list">
+                    <ul class="tips-list learning-box">
                         {% if health_score >= 75 %}
-                            <li><strong>{{ translations[language]['Invest'] }}</strong>: {{ translations[language]['Invest Wisely'] }} <button class="try-it-btn">Try It</button></li>
-                            <li><strong>{{ translations[language]['Scale'] }}</strong>: {{ translations[language]['Scale Smart'] }} <button class="try-it-btn">Try It</button></li>
+                            <li>
+                                <span><strong>{{ translations[language]['Invest'] }}</strong>: {{ translations[language]['Invest Wisely'] }}</span>
+                                <button class="try-it-btn">Try It</button>
+                            </li>
+                            <li>
+                                <span><strong>{{ translations[language]['Scale'] }}</strong>: {{ translations[language]['Scale Smart'] }}</span>
+                                <button class="try-it-btn">Try It</button>
+                            </li>
                         {% elif health_score >= 50 %}
-                            <li><strong>{{ translations[language]['Build'] }}</strong>: {{ translations[language]['Build Savings'] }} <button class="try-it-btn">Try It</button></li>
-                            <li><strong>{{ translations[language]['Cut'] }}</strong>: {{ translations[language]['Cut Costs'] }} <button class="try-it-btn">Try It</button></li>
+                            <li>
+                                <span><strong>{{ translations[language]['Build'] }}</strong>: {{ translations[language]['Build Savings'] }}</span>
+                                <button class="try-it-btn">Try It</button>
+                            </li>
+                            <li>
+                                <span><strong>{{ translations[language]['Cut'] }}</strong>: {{ translations[language]['Cut Costs'] }}</span>
+                                <button class="try-it-btn">Try It</button>
+                            </li>
                         {% else %}
-                            <li><strong>{{ translations[language]['Reduce'] }}</strong>: {{ translations[language]['Reduce Debt'] }} <button class="try-it-btn">Try It</button></li>
-                            <li><strong>{{ translations[language]['Boost'] }}</strong>: {{ translations[language]['Boost Income'] }} <button class="try-it-btn">Try It</button></li>
+                            <li>
+                                <span><strong>{{ translations[language]['Reduce'] }}</strong>: {{ translations[language]['Reduce Debt'] }}</span>
+                                <button class="try-it-btn">Try It</button>
+                            </li>
+                            <li>
+                                <span><strong>{{ translations[language]['Boost'] }}</strong>: {{ translations[language]['Boost Income'] }}</span>
+                                <button class="try-it-btn">Try It</button>
+                            </li>
                         {% endif %}
                     </ul>
-                    <a href="{{ url_for('dashboard', step=5, language=language) }}" class="btn btn-primary mt-3">Next</a>
-                    <a href="{{ url_for('dashboard', step=3, language=language) }}" class="btn btn-secondary mt-3">Back</a>
-                    <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ url_for('dashboard', step=5, language=language) }}" class="btn btn-primary">Next</a>
+                        <a href="{{ url_for('dashboard', step=3, language=language) }}" class="btn btn-secondary">Back</a>
+                        <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -301,17 +404,19 @@
                     <div class="chart-container">
                         <div id="compare-others-chart"></div>
                     </div>
-                    <p class="insight-text">
+                    <div class="info-box">
                         {{ translations[language]['Your Rank'] }} #{{ rank }} {{ translations[language]['out of'] }} {{ total_users }} {{ translations[language]['users'] }} {{ translations[language]['places you'] }}:
                         {% if rank <= total_users * 0.1 %}{{ translations[language]['Top 10%'] }}
                         {% elif rank <= total_users * 0.3 %}{{ translations[language]['Top 30%'] }}
                         {% elif rank <= total_users * 0.7 %}{{ translations[language]['Middle Range'] }}
                         {% else %}{{ translations[language]['Lower Range'] }}{% endif %}
                         {{ translations[language]['Regular Submissions'] }}
-                    </p>
-                    <a href="{{ url_for('dashboard', step=6, language=language) }}" class="btn btn-primary mt-3">Next</a>
-                    <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-secondary mt-3">Back</a>
-                    <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ url_for('dashboard', step=6, language=language) }}" class="btn btn-primary">Next</a>
+                        <a href="{{ url_for('dashboard', step=4, language=language) }}" class="btn btn-secondary">Back</a>
+                        <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -322,20 +427,22 @@
                 <div class="card-header">🔓 {{ translations[language]['Whats Next'] }}</div>
                 <div class="card-body">
                     <div class="d-flex flex-wrap justify-content-center gap-2 mb-3">
-                        <a href="{{ url_for('home') }}" class="btn btn-primary">{{ translations[language]['Back to Home'] }}</a>
                         <a href="{{ FEEDBACK_FORM_URL }}" class="btn btn-secondary">{{ translations[language]['Provide Feedback'] }}</a>
                         <a href="{{ WAITLIST_FORM_URL }}" class="btn btn-secondary">{{ translations[language]['Join Waitlist'] }}</a>
                         <a href="{{ CONSULTANCY_FORM_URL }}" class="btn btn-secondary">{{ translations[language]['Book Consultancy'] }}</a>
                     </div>
-                    <p class="text-center">
+                    <div class="info-box text-center">
                         {{ translations[language]['Contact Us'] }} 
-                        <a href="mailto:Ficoreai@outlook.com">Ficoreai@outlook.com</a> 
+                        <a href="mailto:Ficoreai@outlook.com" class="email-btn">Email Us</a> 
                         {{ translations[language]['for support'] }} | 
                         Follow us on 
                         <a href="{{ LINKEDIN_URL }}" target="_blank" style="color: #0A66C2;">LinkedIn</a> and 
                         <a href="{{ TWITTER_URL }}" target="_blank" style="color: #1DA1F2;">Twitter</a>
-                    </p>
-                    <button class="voice-btn mt-3" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <a href="{{ url_for('home') }}" class="btn btn-primary">{{ translations[language]['Back to Home'] }}</a>
+                        <button class="voice-btn" onclick="alert('Voice guidance coming soon!')">🎙️ Listen</button>
+                    </div>
                 </div>
             </div>
         {% endif %}
@@ -343,8 +450,8 @@
 
     <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
     <script>
-        // Chart Data Setup (same as your original, enhanced with tooltips)
-        const chartDataElement = document.getElementById('chart-data');
+        // Chart Data Setup
+        const chartDataElement = document.getElementById('chart-data') || { dataset: {} };
         let userData = JSON.parse(chartDataElement.dataset.user || '{}');
         let healthScore = JSON.parse(chartDataElement.dataset.healthScore || '0');
         let peerData = JSON.parse(chartDataElement.dataset.peer || '{}');
@@ -360,22 +467,22 @@
         };
         const labels = chartTranslations[language] || chartTranslations['English'];
 
-        // Score Breakdown Chart with Tooltips
+        // Score Breakdown Chart
         const scoreBreakdownData = [{
             x: [userData.income, userData.expenses, userData.debt],
             y: [labels['Income'], labels['Expenses'], labels['Debt']],
             type: 'bar',
             orientation: 'h',
-            marker: { color: ['#28A745', '#FF9800', '#DC3545'] },
+            marker: { color: ['#28A745', '#F57C00', '#DC3545'] },
             text: [userData.income, userData.expenses, userData.debt].map(v => `₦${v.toLocaleString()}`),
             textposition: 'auto',
             hoverinfo: 'text+x'
         }];
         Plotly.newPlot('score-breakdown-chart', scoreBreakdownData, {
-            title: '', xaxis: { title: labels['Amount'] }, yaxis: { title: '' }, height: 350, margin: { l: 100, r: 20, t: 20, b: 50 }, plot_bgcolor: 'rgba(0,0,0,0)', paper_bgcolor: 'rgba(0,0,0,0)'
-        });
+            xaxis: { title: labels['Amount'] }, yaxis: { title: '' }, height: 300, margin: { l: 80, r: 20, t: 20, b: 50 }, plot_bgcolor: 'rgba(0,0,0,0)', paper_bgcolor: 'rgba(0,0,0,0)'
+        }, { responsive: true });
 
-        // Compare Others Chart with Tooltips
+        // Compare Others Chart
         const compareOthersData = [{
             x: [labels['Your Score'], labels['Average Peer Score']],
             y: [healthScore, peerData.averageScore],
@@ -386,12 +493,12 @@
             hoverinfo: 'text+y'
         }];
         Plotly.newPlot('compare-others-chart', compareOthersData, {
-            title: '', xaxis: { title: '' }, yaxis: { title: labels['Financial Health Score'], range: [0, 100] }, height: 350, margin: { l: 50, r: 20, t: 20, b: 50 }, plot_bgcolor: 'rgba(0,0,0,0)', paper_bgcolor: 'rgba(0,0,0,0)'
-        });
+            xaxis: { title: '' }, yaxis: { title: labels['Financial Health Score'], range: [0, 100] }, height: 300, margin: { l: 50, r: 20, t: 20, b: 50 }, plot_bgcolor: 'rgba(0,0,0,0)', paper_bgcolor: 'rgba(0,0,0,0)'
+        }, { responsive: true });
 
-        // Dynamic Background based on step
+        // Dynamic Background
         const backgrounds = ['#E3F2FD', '#F5F7FA', '#E8F5E9', '#FFF3E0', '#ECEFF1', '#E0F7FA'];
-        document.body.style.background = backgrounds[{{ step - 1 }}];
+        document.body.style.background = `linear-gradient(135deg, ${backgrounds[{{ step - 1 }}]}, #F5F7FA)`;
     </script>
 </body>
 </html>
