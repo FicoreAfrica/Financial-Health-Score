@@ -2,17 +2,30 @@ from flask import Flask, render_template, request, flash, redirect, url_for, ses
 from flask_wtf import FlaskForm
 from wtforms import StringField, FloatField, SelectField, DateField, BooleanField, SubmitField
 from wtforms.validators import DataRequired, Email, NumberRange
+from flask_session import Session
 import json
 import os
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file (local development)
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'ficore-africa-secret-key')
+app.config['SESSION_TYPE'] = 'filesystem'  # Server-side session storage
+app.config['SESSION_FILE_DIR'] = os.path.join(app.instance_path, 'sessions')
+app.config['SESSION_PERMANENT'] = False
+Session(app)
+
 DATA_FILE = 'bills.json'
+
+# Ensure instance and sessions directories exist
+os.makedirs(app.instance_path, exist_ok=True)
+os.makedirs(os.path.join(app.instance_path, 'sessions'), exist_ok=True)
 
 # Translations for English and Hausa
 translations = {
@@ -183,8 +196,12 @@ class BillForm(FlaskForm):
 # Load bills from JSON file
 def load_bills():
     if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r') as f:
-            return json.load(f)
+        try:
+            with open(DATA_FILE, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading bills: {e}")
+            return []
     return []
 
 # Save bills to JSON file
@@ -280,9 +297,12 @@ def bill_planner_dashboard():
     # Update bill statuses
     today = datetime.now().date()
     for bill in bills:
-        due_date = datetime.strptime(bill['DueDate'], '%Y-%m-%d').date()
-        if bill['Status'] != 'Paid':
-            bill['Status'] = 'Overdue' if due_date < today else 'Pending'
+        try:
+            due_date = datetime.strptime(bill['DueDate'], '%Y-%m-%d').date()
+            if bill['Status'] != 'Paid':
+                bill['Status'] = 'Overdue' if due_date < today else 'Pending'
+        except ValueError:
+            print(f"Invalid due date format for bill: {bill['Description']}")
     
     return render_template('bill_planner_dashboard.html', 
                          form=form, 
