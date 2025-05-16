@@ -8,9 +8,10 @@ from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import os
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'ficore-africa-secret-key'  # Replace with secure key in production
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'ficore-africa-secret-key')
 DATA_FILE = 'bills.json'
 
 # Translations for English and Hausa
@@ -77,7 +78,12 @@ translations = {
         'Thank you for choosing Ficore Africa': 'Thank you for choosing Ficore Africa',
         'Pending': 'Pending',
         'Overdue': 'Overdue',
-        'Paid': 'Paid'
+        'Paid': 'Paid',
+        'Use mobile money for timely rent payments to avoid late fees.': 'Use mobile money for timely rent payments to avoid late fees.',
+        'Switch to energy-efficient utilities to reduce bills.': 'Switch to energy-efficient utilities to reduce bills.',
+        'Plan recurring bills to manage cash flow effectively.': 'Plan recurring bills to manage cash flow effectively.',
+        'Your Financial Insights': 'Your Financial Insights',
+        'Bill Categories': 'Bill Categories'
     },
     'ha': {
         'Bill Planner': 'Mai Tsara Kuɗi',
@@ -102,14 +108,14 @@ translations = {
         'Contact Us': 'Tuntube Mu',
         'Click to Email': 'Danna don Imel',
         'for support': 'don tallafi',
-        'Provide Feedback': 'Bayar da Ra'ayi',
+        'Provide Feedback': 'Bayar da Ra\'ayi',
         'What is this bill for?': 'Wannan kuɗin na me ne?',
         'Description required': 'Ana buƙatar bayanin',
         'How much is the bill? Enter in Naira (₦).': 'Nawa ne kuɗin? Shigar da cikin Naira (₦).',
         'Amount required': 'Ana buƙatar adadin',
         'When is this bill due?': 'Yaushe ne wannan kuɗin zai kare?',
         'Due date required': 'Ana buƙatar ranar karewa',
-        'Choose the type of bill.': 'Zaɓi nau'in kuɗin.',
+        'Choose the type of bill.': 'Zaɓi nau\'in kuɗin.',
         'Category selected!': 'An zaɓi rukunin!',
         'Category required': 'Ana buƙatar rukunin',
         'How often does this bill occur?': 'Sau nawa wannan kuɗin yake faruwa?',
@@ -132,8 +138,8 @@ translations = {
         'Pay on time to avoid late fees.': 'Biya a kan lokaci don guje wa jaruman jinkiri.',
         'Manage your bills now': 'Sarrafa kuɗin ka yanzu',
         'Go to Bill Planner': 'Je zuwa Mai Tsara Kuɗi',
-        'Please provide feedback on your experience': 'Da fatan za a bayar da ra'ayi kan ƙwarewarka',
-        'Feedback Form': 'Fom ɗin Ra'ayi',
+        'Please provide feedback on your experience': 'Da fatan za a bayar da ra\'ayi kan ƙwarewarka',
+        'Feedback Form': 'Fom ɗin Ra\'ayi',
         'Want Smart Insights? Join our waitlist': 'Kana son Fahimta Mai Wayo? Shiga jerin jirona',
         'Join Waitlist': 'Shiga Jerin Jirona',
         'Need expert advice? Book a consultancy': 'Kana buƙatar shawarar ƙwararru? Yi ajiyar shawara',
@@ -141,7 +147,12 @@ translations = {
         'Thank you for choosing Ficore Africa': 'Na godiya da zabar Ficore Afirka',
         'Pending': 'A Jiran',
         'Overdue': 'Ya Wuce',
-        'Paid': 'An Biya'
+        'Paid': 'An Biya',
+        'Use mobile money for timely rent payments to avoid late fees.': 'Amfani da kuɗin wayar hannu don biyan hayar lokaci don guje wa jaruman jinkiri.',
+        'Switch to energy-efficient utilities to reduce bills.': 'Canja zuwa kayan aiki masu amfani da makamashi don rage kuɗin.',
+        'Plan recurring bills to manage cash flow effectively.': 'Tsara kuɗin maimaitawa don sarrafa kwararar kuɗi yadda ya kamata.',
+        'Your Financial Insights': 'Fahimtar Kuɗin Ka',
+        'Bill Categories': 'Rukunin Kuɗi'
     }
 }
 
@@ -178,13 +189,16 @@ def load_bills():
 
 # Save bills to JSON file
 def save_bills(bills):
-    with open(DATA_FILE, 'w') as f:
-        json.dump(bills, f, indent=4)
+    try:
+        with open(DATA_FILE, 'w') as f:
+            json.dump(bills, f, indent=4)
+    except Exception as e:
+        print(f"Error saving bills: {e}")
 
 # Send email reminder
 def send_email_reminder(to_email, user_name, bills, lang):
     msg = MIMEMultipart()
-    msg['From'] = 'your_email@gmail.com'  # Replace with your Gmail
+    msg['From'] = os.environ.get('EMAIL_USER', 'your_email@gmail.com')
     msg['To'] = to_email
     msg['Subject'] = translations[lang]['Bill Payment Reminder']
     
@@ -198,7 +212,7 @@ def send_email_reminder(to_email, user_name, bills, lang):
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
-            server.login('your_email@gmail.com', 'your_app_password')  # Use App Password
+            server.login(msg['From'], os.environ.get('EMAIL_PASSWORD', 'your_app_password'))
             server.sendmail(msg['From'], msg['To'], msg.as_string())
     except Exception as e:
         print(f"Email sending failed: {e}")
@@ -314,4 +328,4 @@ def share_summary():
                          twitter_url=twitter_url)
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
