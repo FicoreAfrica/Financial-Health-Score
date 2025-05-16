@@ -5,6 +5,7 @@ from wtforms.validators import DataRequired, Email, NumberRange
 from flask_session import Session
 import json
 import os
+import logging
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
@@ -12,6 +13,10 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables
 load_dotenv()
@@ -26,6 +31,7 @@ Session(app)
 DATA_FILE = 'bills.json'
 os.makedirs(app.instance_path, exist_ok=True)
 os.makedirs(os.path.join(app.instance_path, 'sessions'), exist_ok=True)
+os.makedirs(os.path.join(app.root_path, 'templates'), exist_ok=True)  # Ensure templates directory exists
 
 # Translations
 translations = {
@@ -184,7 +190,7 @@ def load_bills():
             with open(DATA_FILE, 'r') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"Error loading bills: {e}")
+            logger.error(f"Error loading bills: {e}")
             return []
     return []
 
@@ -193,7 +199,7 @@ def save_bills(bills):
         with open(DATA_FILE, 'w') as f:
             json.dump(bills, f, indent=4)
     except Exception as e:
-        print(f"Error saving bills: {e}")
+        logger.error(f"Error saving bills: {e}")
 
 # Email reminder
 def send_email_reminder(to_email, user_name, bill, lang, reminder_type):
@@ -208,12 +214,16 @@ def send_email_reminder(to_email, user_name, bill, lang, reminder_type):
         'due_date': 'on due date'
     }[reminder_type]
     
-    html = render_template('reminder_email.html',
-                         user_name=user_name,
-                         bill=bill,
-                         reminder_text=reminder_text,
-                         translations=translations[lang])
-    msg.attach(MIMEText(html, 'html'))
+    try:
+        html = render_template('reminder_email.html',
+                            user_name=user_name,
+                            bill=bill,
+                            reminder_text=reminder_text,
+                            translations=translations[lang])
+        msg.attach(MIMEText(html, 'html'))
+    except Exception as e:
+        logger.error(f"Error rendering reminder_email.html: {e}")
+        return
     
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
@@ -221,7 +231,7 @@ def send_email_reminder(to_email, user_name, bill, lang, reminder_type):
             server.login(msg['From'], os.environ.get('EMAIL_PASSWORD', 'your_app_password'))
             server.sendmail(msg['From'], msg['To'], msg.as_string())
     except Exception as e:
-        print(f"Email sending failed: {e}")
+        logger.error(f"Email sending failed: {e}")
 
 # Scheduler for reminders
 scheduler = BackgroundScheduler()
@@ -257,9 +267,13 @@ def fill_form():
         session['language'] = form.language.data
         return redirect(url_for('view_edit_bills'))
     
-    return render_template('bill_form.html',
-                         form=form,
-                         translations=translations[lang])
+    try:
+        return render_template('bill_form.html',
+                            form=form,
+                            translations=translations[lang])
+    except Exception as e:
+        logger.error(f"Error rendering bill_form.html: {e}")
+        raise
 
 @app.route('/view_edit_bills', methods=['GET', 'POST'])
 def view_edit_bills():
@@ -315,11 +329,15 @@ def view_edit_bills():
                 form.record_id.data = record_id
                 break
     
-    return render_template('view_edit_bills.html',
-                         form=form,
-                         bills=filtered_bills,
-                         category=category,
-                         translations=translations[lang])
+    try:
+        return render_template('view_edit_bills.html',
+                            form=form,
+                            bills=filtered_bills,
+                            category=category,
+                            translations=translations[lang])
+    except Exception as e:
+        logger.error(f"Error rendering view_edit_bills.html: {e}")
+        raise
 
 @app.route('/toggle_status/<record_id>')
 def toggle_status(record_id):
@@ -358,16 +376,20 @@ def dashboard():
         translations[lang]['Plan monthly bills to manage your budget better.']
     ]
     
-    return render_template('dashboard.html',
-                         unpaid_count=unpaid_count,
-                         total_bills=total_bills,
-                         categories=categories,
-                         due_today=due_today,
-                         due_week=due_week,
-                         due_month=due_month,
-                         tips=tips,
-                         bills=bills,
-                         translations=translations[lang])
+    try:
+        return render_template('dashboard.html',
+                            unpaid_count=unpaid_count,
+                            total_bills=total_bills,
+                            categories=categories,
+                            due_today=due_today,
+                            due_week=due_week,
+                            due_month=due_month,
+                            tips=tips,
+                            bills=bills,
+                            translations=translations[lang])
+    except Exception as e:
+        logger.error(f"Error rendering dashboard.html: {e}")
+        raise
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
