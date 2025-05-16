@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SelectField, DateField, BooleanField, SubmitField, MultipleSelectField
+from wtforms import StringField, FloatField, SelectField, DateField, BooleanField, SubmitField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, NumberRange
 from flask_session import Session
 import json
@@ -168,7 +168,7 @@ class BillForm(FlaskForm):
         ('monthly', 'Monthly'),
         ('quarterly', 'Quarterly')
     ], validators=[DataRequired()])
-    reminders = MultipleSelectField('Reminders', choices=[
+    reminders = SelectMultipleField('Reminders', choices=[
         ('3_days', '3 days before'),
         ('1_day', '1 day before'),
         ('due_date', 'On due date')
@@ -299,6 +299,21 @@ def view_edit_bills():
         schedule_reminders(bill, email, user_name, lang)
         flash(translations[lang]['Save Bill'], 'success')
         return redirect(url_for('view_edit_bills', category=category))
+    
+    # Pre-populate form for editing
+    record_id = request.args.get('record_id')
+    if record_id:
+        for bill in bills:
+            if bill.get('RecordID') == record_id:
+                form.description.data = bill['Description']
+                form.amount.data = bill['Amount']
+                form.due_date.data = datetime.strptime(bill['DueDate'], '%Y-%m-%d')
+                form.category.data = bill['Category']
+                form.recurrence.data = bill['Recurrence']
+                form.reminders.data = bill.get('Reminders', [])
+                form.status.data = bill['Status']
+                form.record_id.data = record_id
+                break
     
     return render_template('view_edit_bills.html',
                          form=form,
