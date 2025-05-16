@@ -1,0 +1,156 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="{{ session.language|default('en') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ translations['View and Edit Bills'] }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; }
+        .container { max-width: 700px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+        .header { text-align: center; padding: 10px; background: #1E7F71; color: #fff; border-radius: 8px 8px 0 0; }
+        .form-label { font-size: 1.1em; }
+        .form-control, .form-select { font-size: 1em; margin-bottom: 10px; }
+        .btn-primary { background: #2E7D32; border: none; font-size: 1.1em; }
+        .btn-primary:hover { background: #0288D1; }
+        .btn-secondary { background: #6c757d; font-size: 1.1em; }
+        .table { font-size: 1em; }
+        .status-paid { color: green; }
+        .status-unpaid { color: red; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>{{ translations['View and Edit Bills'] }}</h2>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+        <div class="mb-3">
+            <label class="form-label">{{ translations['Select Category'] }}</label>
+            <select class="form-select" onchange="window.location.href='{{ url_for('view_edit_bills') }}?category='+this.value">
+                <option value="all" {% if category == 'all' %}selected{% endif %}>{{ translations['All'] }}</option>
+                <option value="utilities" {% if category == 'utilities' %}selected{% endif %}>{{ translations['Utilities'] }}</option>
+                <option value="rent" {% if category == 'rent' %}selected{% endif %}>{{ translations['Rent'] }}</option>
+                <option value="subscription" {% if category == 'subscription' %}selected{% endif %}>{{ translations['Subscription'] }}</option>
+                <option value="other" {% if category == 'other' %}selected{% endif %}>{{ translations['Other'] }}</option>
+            </select>
+        </div>
+        {% if bills %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>{{ translations['Description'] }}</th>
+                        <th>{{ translations['Amount'] }}</th>
+                        <th>{{ translations['Due Date'] }}</th>
+                        <th>{{ translations['Status'] }}</th>
+                        <th>{{ translations['Edit'] }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for bill in bills %}
+                        <tr>
+                            <td>{{ bill.Description }}</td>
+                            <td>₦{{ bill.Amount }}</td>
+                            <td>{{ translations['Due'] }} {{ bill.DueDate }}</td>
+                            <td>
+                                <a href="{{ url_for('toggle_status', record_id=bill.RecordID) }}"
+                                   class="status-{{ 'paid' if bill.Status == 'Paid' else 'unpaid' }}">
+                                    {{ translations[bill.Status] }}
+                                </a>
+                            </td>
+                            <td>
+                                <a href="{{ url_for('view_edit_bills', record_id=bill.RecordID, category=category) }}"
+                                   class="btn btn-primary btn-sm">{{ translations['Edit'] }}</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+        <h3>{{ translations['Add New Bill'] }}</h3>
+        <form method="POST" action="{{ url_for('view_edit_bills', category=category) }}">
+            {{ form.hidden_tag() }}
+            <div class="mb-3">
+                <label class="form-label">{{ translations['What is this bill for?'] }}</label>
+                {{ form.description(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ translations['How much is the bill? (₦)'] }}</label>
+                {{ form.amount(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ translations['When is this bill due?'] }}</label>
+                {{ form.due_date(class="form-control") }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ translations['Category'] }}</label>
+                {{ form.category(class="form-select") }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ translations['How often does this bill occur?'] }}</label>
+                {{ form.recurrence(class="form-select") }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ translations['Send me reminders'] }}</label>
+                {{ form.reminders(class="form-select", multiple=True) }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label">{{ translations['Status'] }}</label>
+                {{ form.status(class="form-select") }}
+            </div>
+            {{ form.record_id(class="form-control", type="hidden") }}
+            <button type="submit" class="btn btn-primary">{{ translations['Save Bill'] }}</button>
+        </form>
+        <div class="mt-3">
+            <a href="{{ url_for('fill_form') }}" class="btn btn-secondary">{{ translations['Back'] }}</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">{{ translations['Go to Dashboard'] }}</a>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
