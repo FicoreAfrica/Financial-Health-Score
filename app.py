@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SelectField, DateField, BooleanField, SubmitField, SelectMultipleField
+from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField
 from wtforms.validators import DataRequired, Email, NumberRange
 from flask_session import Session
 import json
@@ -31,7 +31,7 @@ Session(app)
 DATA_FILE = 'bills.json'
 os.makedirs(app.instance_path, exist_ok=True)
 os.makedirs(os.path.join(app.instance_path, 'sessions'), exist_ok=True)
-os.makedirs(os.path.join(app.root_path, 'templates'), exist_ok=True)  # Ensure templates directory exists
+os.makedirs(os.path.join(app.root_path, 'templates'), exist_ok=True)
 
 # Translations
 translations = {
@@ -90,7 +90,8 @@ translations = {
         'Due': 'Due',
         'Pay now to avoid late fees': 'Pay now to avoid late fees',
         'Manage your bills': 'Manage your bills',
-        'Thank you for using Ficore Africa': 'Thank you for using Ficore Africa'
+        'Thank you for using Ficore Africa': 'Thank you for using Ficore Africa',
+        'Due date must be today or in the future': 'Due date must be today or in the future'
     },
     'ha': {
         'Bill Planner': 'Mai Tsara Kuɗi',
@@ -147,7 +148,8 @@ translations = {
         'Due': 'Karewa',
         'Pay now to avoid late fees': 'Biya yanzu don guje wa jaruman jinkiri',
         'Manage your bills': 'Sarrafa kuɗin ka',
-        'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka'
+        'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka',
+        'Due date must be today or in the future': 'Ranar karewa dole ne ta kasance yau ko a nan gaba'
     }
 }
 
@@ -201,11 +203,41 @@ def save_bills(bills):
     except Exception as e:
         logger.error(f"Error saving bills: {e}")
 
+# Generate recurring bills
+def generate_recurring_bills(bill, current_date):
+    bills = []
+    due_date = datetime.strptime(bill['DueDate'], '%Y-%m-%d')
+    recurrence = bill['Recurrence']
+    base_id = bill['RecordID']
+    
+    if recurrence == 'one-time':
+        return [bill]
+    
+    # Generate up to 12 future instances (1 year)
+    for i in range(12):
+        if recurrence == 'weekly':
+            next_date = due_date + timedelta(days=7 * (i + 1))
+        elif recurrence == 'monthly':
+            next_date = due_date + timedelta(days=30 * (i + 1))
+        elif recurrence == 'quarterly':
+            next_date = due_date + timedelta(days=90 * (i + 1))
+        
+        if next_date.date() > current_date.date() + timedelta(days=365):
+            break
+        
+        new_bill = bill.copy()
+        new_bill['DueDate'] = next_date.strftime('%Y-%m-%d')
+        new_bill['RecordID'] = f"{base_id}_{i + 1}"
+        new_bill['Status'] = 'Unpaid'  # Reset status for future bills
+        bills.append(new_bill)
+    
+    return [bill] + bills
+
 # Email reminder
 def send_email_reminder(to_email, user_name, bill, lang, reminder_type):
     msg = MIMEMultipart()
     msg['From'] = os.environ.get('EMAIL_USER', 'your_email@gmail.com')
-    msg['To'] = to_email
+    msg['To'] = to_email.lower()
     msg['Subject'] = translations[lang]['Bill Reminder']
     
     reminder_text = {
@@ -230,8 +262,9 @@ def send_email_reminder(to_email, user_name, bill, lang, reminder_type):
             server.starttls()
             server.login(msg['From'], os.environ.get('EMAIL_PASSWORD', 'your_app_password'))
             server.sendmail(msg['From'], msg['To'], msg.as_string())
+        logger.info(f"Sent reminder email to {to_email} for bill {bill['RecordID']} ({reminder_type})")
     except Exception as e:
-        logger.error(f"Email sending failed: {e}")
+        logger.error(f"Email sending failed for {to_email}, bill {bill['RecordID']}: {e}")
 
 # Scheduler for reminders
 scheduler = BackgroundScheduler()
@@ -239,7 +272,10 @@ scheduler.start()
 
 def schedule_reminders(bill, email, user_name, lang):
     due_date = datetime.strptime(bill['DueDate'], '%Y-%m-%d')
-    for reminder in bill.get('Reminders', []):
+    reminders = bill.get('Reminders', [])
+    scheduled_jobs = bill.get('ScheduledJobs', [])
+    
+    for reminder in reminders:
         if reminder == '3_days':
             send_date = due_date - timedelta(days=3)
         elif reminder == '1_day':
@@ -248,23 +284,55 @@ def schedule_reminders(bill, email, user_name, lang):
             send_date = due_date
         
         if send_date >= datetime.now():
+            job_id = f"bill_{bill['RecordID']}_{reminder}"
             scheduler.add_job(
                 send_email_reminder,
                 trigger=DateTrigger(run_date=send_date),
                 args=[email, user_name, bill, lang, reminder],
-                id=f"bill_{bill['RecordID']}_{reminder}"
+                id=job_id
             )
+            scheduled_jobs.append({
+                'job_id': job_id,
+                'send_date': send_date.strftime('%Y-%m-%d %H:%M:%S'),
+                'reminder_type': reminder
+            })
+    
+    bill['ScheduledJobs'] = scheduled_jobs
 
-# Routes
+# Reload scheduled jobs on app start
+def reload_scheduled_jobs():
+    bills = load_bills()
+    for bill in bills:
+        email = bill.get('Email')
+        user_name = bill.get('UserName', 'User')
+        lang = bill.get('Language', 'en')
+        for job in bill.get('ScheduledJobs', []):
+            send_date = datetime.strptime(job['send_date'], '%Y-%m-%d %H:%M:%S')
+            if send_date >= datetime.now():
+                scheduler.add_job(
+                    send_email_reminder,
+                    trigger=DateTrigger(run_date=send_date),
+                    args=[email, user_name, bill, lang, job['reminder_type']],
+                    id=job['job_id']
+                )
+                logger.info(f"Reloaded job {job['job_id']} for bill {bill['RecordID']}")
+
+# Forms
 @app.route('/', methods=['GET', 'POST'])
 def fill_form():
     form = UserForm()
     lang = session.get('language', 'en')
     
     if form.validate_on_submit():
-        session['first_name'] = form.first_name.data
-        session['email'] = form.email.data
-        session['language'] = form.language.data
+        try:
+            session['first_name'] = form.first_name.data
+            session['email'] = form.email.data.lower()
+            session['language'] = form.language.data
+            logger.info(f"Session updated: first_name={session['first_name']}, email={session['email']}, language={session['language']}")
+        except Exception as e:
+            logger.error(f"Error updating session: {e}")
+            flash(translations[lang]['Error saving user data'], 'danger')
+            return render_template('bill_form.html', form=form, translations=translations[lang])
         return redirect(url_for('view_edit_bills'))
     
     try:
@@ -287,6 +355,16 @@ def view_edit_bills():
     filtered_bills = [b for b in bills if category == 'all' or b['Category'] == category]
     
     if form.validate_on_submit():
+        # Validate due date
+        due_date = form.due_date.data
+        if due_date < datetime.now().date():
+            flash(translations[lang]['Due date must be today or in the future'], 'danger')
+            return render_template('view_edit_bills.html',
+                                form=form,
+                                bills=filtered_bills,
+                                category=category,
+                                translations=translations[lang])
+        
         bill = {
             'Description': form.description.data,
             'Amount': form.amount.data,
@@ -295,7 +373,9 @@ def view_edit_bills():
             'Recurrence': form.recurrence.data,
             'Status': form.status.data,
             'Reminders': form.reminders.data,
-            'Email': email
+            'Email': email,
+            'UserName': user_name,
+            'Language': lang
         }
         
         record_id = form.record_id.data
@@ -307,10 +387,13 @@ def view_edit_bills():
                     break
         else:
             bill['RecordID'] = str(len(bills) + 1)
-            bills.append(bill)
+            recurring_bills = generate_recurring_bills(bill, datetime.now())
+            bills.extend(recurring_bills)
+        
+        for b in recurring_bills if not record_id else [bill]:
+            schedule_reminders(b, email, user_name, lang)
         
         save_bills(bills)
-        schedule_reminders(bill, email, user_name, lang)
         flash(translations[lang]['Save Bill'], 'success')
         return redirect(url_for('view_edit_bills', category=category))
     
@@ -354,6 +437,23 @@ def dashboard():
     lang = session.get('language', 'en')
     bills = load_bills()
     
+    if not bills:
+        return render_template('dashboard.html',
+                            unpaid_count=0,
+                            total_bills=0,
+                            categories={},
+                            due_today=[],
+                            due_week=[],
+                            due_month=[],
+                            tips=[
+                                translations[lang]['Pay bills early to avoid late fees. Use mobile money for quick payments.'],
+                                translations[lang]['Switch to energy-efficient utilities to save money.'],
+                                translations[lang]['Plan monthly bills to manage your budget better.']
+                            ],
+                            bills=[],
+                            translations=translations[lang],
+                            error=translations[lang]['No bills found'])
+    
     unpaid_count = len([b for b in bills if b['Status'] == 'Unpaid'])
     total_bills = sum(b['Amount'] for b in bills)
     
@@ -390,6 +490,24 @@ def dashboard():
     except Exception as e:
         logger.error(f"Error rendering dashboard.html: {e}")
         raise
+
+@app.route('/test_email')
+def test_email():
+    lang = session.get('language', 'en')
+    email = session.get('email', 'test@example.com')
+    user_name = session.get('first_name', 'Test User')
+    bill = {
+        'Description': 'Test Bill',
+        'Amount': 1000.0,
+        'DueDate': datetime.now().strftime('%Y-%m-%d'),
+        'RecordID': 'test'
+    }
+    send_email_reminder(email, user_name, bill, lang, 'due_date')
+    flash(translations[lang]['Test email sent'], 'success')
+    return redirect(url_for('view_edit_bills'))
+
+# Initialize scheduler
+reload_scheduled_jobs()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
