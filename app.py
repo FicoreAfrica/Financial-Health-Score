@@ -1,7 +1,7 @@
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField
-from wtforms.validators import DataRequired, Email, NumberRange
+from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField
+from wtforms.validators import DataRequired, Email, NumberRange, Optional
 from flask_session import Session
 import json
 import os
@@ -13,6 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
+import uuid
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -41,7 +42,7 @@ SPENDING_LIMITS = {
     'other': 15000
 }
 
-# Translations
+# Translations (English and Hausa only)
 translations = {
     'en': {
         'Bill Planner': 'Bill Planner',
@@ -49,6 +50,8 @@ translations = {
         'Enter your first name': 'Enter your first name',
         'Enter your email': 'Enter your email',
         'Choose your language': 'Choose your language',
+        'English': 'English',
+        'Hausa': 'Hausa',
         'Next': 'Next',
         'View and Edit Bills': 'View and Edit Bills',
         'Select Category': 'Select Category',
@@ -67,6 +70,7 @@ translations = {
         'What is this bill for?': 'What is this bill for?',
         'How much is the bill? (₦)': 'How much is the bill? (₦)',
         'When is this bill due?': 'When is this bill due?',
+        'Category': 'Category',
         'How often does this bill occur?': 'How often does this bill occur?',
         'One-time': 'One-time',
         'Weekly': 'Weekly',
@@ -108,81 +112,182 @@ translations = {
         'Manage your bills': 'Manage your bills',
         'Thank you for using Ficore Africa': 'Thank you for using Ficore Africa',
         'Due date must be today or in the future': 'Due date must be today or in the future',
-        'Spending Limit Exceeded': 'You’ve exceeded ₦{limit} on {category} this month'
+        'Spending Limit Exceeded': 'You’ve exceeded ₦{limit} on {category} this month',
+        'Net Worth Calculator': 'Net Worth Calculator',
+        'Know Your Net Worth': 'Know Your Net Worth',
+        'Personal Information': 'Personal Information',
+        'Assets': 'Assets',
+        'Cash and Bank Balances': 'Cash and Bank Balances',
+        'Investments': 'Investments',
+        'Real Estate': 'Real Estate',
+        'Vehicles': 'Vehicles',
+        'Business Ownership': 'Business Ownership',
+        'Other Assets': 'Other Assets',
+        'Liabilities': 'Liabilities',
+        'Credit Card Debt': 'Credit Card Debt',
+        'Loans': 'Loans',
+        'Outstanding Bills': 'Outstanding Bills',
+        'Other Debts': 'Other Debts',
+        'Calculate Net Worth': 'Calculate Net Worth',
+        'Total Assets': 'Total Assets',
+        'Total Liabilities': 'Total Liabilities',
+        'Net Worth': 'Net Worth',
+        'Positive Net Worth': 'Great! Let’s grow it.',
+        'Negative Net Worth': 'Focus on reducing high-interest debt.',
+        'Asset Concentration Warning': 'Over-reliance on {asset_type}. Consider diversifying.',
+        'High Debt Ratio': 'Debt exceeds 60% of assets. Reduce debt for stability.',
+        'Share Results': 'Share Results',
+        'Net Worth Milestone': 'Net Worth Milestone! Positive net worth achieved!',
+        'Emergency Fund Calculator': 'Emergency Fund Calculator',
+        'Plan Emergency Fund': 'Plan Emergency Fund',
+        'Financial Details': 'Financial Details',
+        'Monthly Expenses': 'Monthly Expenses',
+        'Monthly Income': 'Monthly Income',
+        'Current Savings': 'Current Savings',
+        'Risk Level': 'Risk Level',
+        'Low': 'Low',
+        'Medium': 'Medium',
+        'High': 'High',
+        'Number of Dependents': 'Number of Dependents',
+        'Savings Timeline': 'Savings Timeline',
+        '6 Months': '6 Months',
+        '12 Months': '12 Months',
+        '18 Months': '18 Months',
+        'Auto Email Results': 'Send results to my email',
+        'Calculate Fund': 'Calculate Fund',
+        'Target Fund Size': 'Target Fund Size',
+        'Savings Gap': 'Savings Gap',
+        'Monthly Savings Goal': 'Monthly Savings Goal',
+        'Timeline': 'Timeline',
+        'Fund Builder': 'Fund Builder! Emergency fund plan created!',
+        'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.': 'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.',
+        'Error sending email': 'Error sending email'
     },
     'ha': {
-        'Bill Planner': 'Tsara Kuɗin Biya',
-        'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don mutanen Afirka',
+        'Bill Planner': 'Mai Tsara Kuɗi',
+        'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don Afirka',
         'Enter your first name': 'Shigar da sunanka na farko',
         'Enter your email': 'Shigar da imel ɗinka',
-        'Choose your language': 'Zaɓi yaren da akeso',
+        'Choose your language': 'Zaɓi yarenka',
+        'English': 'Turanci',
+        'Hausa': 'Hausa',
         'Next': 'Na gaba',
-        'View and Edit Bills': 'Wajen Dubawa da Gyara Tsari',
+        'View and Edit Bills': 'Duba da Gyara Kuɗi',
         'Select Category': 'Zaɓi Rukuni',
-        'All': 'Duka',
-        'Utilities': 'Kayan Amfani',
-        'Rent': 'Kudin Haya',
-        'Subscription': 'Biyan Subscription',
-        'Other': 'Abu Na Daban',
-        'Description': 'Bayanan Tsari',
+        'All': 'Duk',
+        'Utilities': 'Kayan aiki',
+        'Rent': 'Haya',
+        'Subscription': 'Biyan kuɗi',
+        'Other': 'Sauran',
+        'Description': 'Bayanin',
         'Amount': 'Adadin',
-        'Due Date': 'Ranar Biya',
+        'Due Date': 'Ranar Karewa',
         'Status': 'Matsayi',
         'Paid': 'An Biya',
         'Unpaid': 'Ba a Biya ba',
-        'Add New Bill': 'Sabon Kuɗin Biya',
+        'Add New Bill': 'Ƙara Sabon Kuɗi',
         'What is this bill for?': 'Wannan kuɗin na me ne?',
         'How much is the bill? (₦)': 'Nawa ne kuɗin? (₦)',
-        'When is this bill due?': 'Yaushe ne za,a biya wannan kuɗin?',
-        'How often does this bill occur?': 'Sau nawa biyan wannan kuɗin yake faruwa?',
+        'When is this bill due?': 'Yaushe ne wannan kuɗin zai kare?',
+        'Category': 'Rukuni',
+        'How often does this bill occur?': 'Sau nawa wannan kuɗin yake faruwa?',
         'One-time': 'Lokaci ɗaya',
         'Weekly': 'Mako-mako',
         'Monthly': 'Kowane wata',
-        'Quarterly': 'Kowane Wata Uku',
+        'Quarterly': 'Kowane kwata',
         'Send me reminders': 'Aiko mini da tunatarwa',
         '3 days before': 'Kwanaki 3 kafin',
         '1 day before': 'Rana 1 kafin',
-        'On due date': 'A ranar Biya',
-        'Save Bill': 'Adana Kuɗin Biya',
+        'On due date': 'A ranar karewa',
+        'Save Bill': 'Ajiye Kuɗi',
         'Edit': 'Gyara',
         'Delete': 'Goge',
-        'Confirm Delete': 'Shin ka tabbatar kana so ka goge wannan kuɗin biyan?',
-        'Bill Deleted': 'An goge kuɗin biyan cikin nasara',
+        'Confirm Delete': 'Shin ka tabbata kana so ka goge wannan kuɗin?',
+        'Bill Deleted': 'An goge kuɗin cikin nasara',
         'Back': 'Koma baya',
         'Go to Dashboard': 'Je zuwa Dashboard',
-        'Dashboard': 'Allon Bayanai',
+        'Dashboard': 'Dashboard',
         'Paid Bills': 'Kuɗin da aka biya',
         'Unpaid Bills': 'Kuɗin da ba a biya ba',
-        'Total Bills': 'Jimlar Kuɗin Biya',
-        'Total Paid': 'Jimlar wanda aka biya',
-        'Total Unpaid': 'Jimlar wanda ba a biya ba',
-        'Overdue Bills': 'Kuɗin da suka wuce kwanan watan biya',
-        'Upcoming Bills': 'Kuɗin da ke zuwa nan gaba',
-        'Spending by Category': 'Rukunin Kudin Kashewa',
-        'Bills Due': 'Kuɗin da ranar biya ya masto kusa',
+        'Total Bills': 'Jimlar Kuɗi',
+        'Total Paid': 'Jimlar da aka biya',
+        'Total Unpaid': 'Jimlar da ba a biya ba',
+        'Overdue Bills': 'Kuɗin da suka wuce kwanan wata',
+        'Upcoming Bills': 'Kuɗin da ke zuwa',
+        'Spending by Category': 'Kashewa ta Rukuni',
+        'Bills Due': 'Kuɗin da za a biya',
         'Today': 'Yau',
         'This Week': 'Wannan Mako',
         'This Month': 'Wannan Wata',
-        'Tips for Managing Bills': 'Shawara don Sarrafa Kuɗin Biya',
-        'Pay bills early to avoid late fees. Use mobile money for quick payments.': 'Biya kuɗi da wuri don guje wa kalubalen jinkiri kamar karin kudin ruwa. Yi amfani da wayar hannunku don biya cikin sauri.',
+        'Tips for Managing Bills': 'Shawara don Sarrafa Kuɗi',
+        'Pay bills early to avoid late fees. Use mobile money for quick payments.': 'Biya kuɗi da wuri don guje wa jaruman jinkiri. Yi amfani da kuɗin wayar hannu don biya cikin sauri.',
         'Switch to energy-efficient utilities to save money.': 'Canja zuwa kayan aiki masu amfani da makamashi don ajiyar kuɗi.',
         'Plan monthly bills to manage your budget better.': 'Tsara kuɗin kowane wata don sarrafa kasafin kuɗin ka mafi kyau.',
-        'Dear': 'Barka',
+        'Dear': 'Masoyi',
         'Bill Reminder': 'Tunatarwar Kuɗi',
-        'Your bill is due soon': 'Lokacin biyan Kudin yana kusa',
-        'Due': 'Ya Iso',
-        'Pay now to avoid late fees': 'Biya yanzu don guje wa kalubalen jinkiri',
+        'Your bill is due soon': 'Kuɗin ka yana kusa da karewa',
+        'Due': 'Karewa',
+        'Pay now to avoid late fees': 'Biya yanzu don guje wa jaruman jinkiri',
         'Manage your bills': 'Sarrafa kuɗin ka',
-        'Thank you for using Ficore Africa': 'Muna godiya da amfani da Ficore Afirka',
-        'Due date must be today or in the future': 'Ranar Biya dole ne ta kasance yau ko a nan gaba',
-        'Spending Limit Exceeded': 'Ka wuce ₦{limit} akan {category} a wannan wata'
+        'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka',
+        'Due date must be today or in the future': 'Ranar karewa dole ne ta kasance yau ko a nan gaba',
+        'Spending Limit Exceeded': 'Ka wuce ₦{limit} akan {category} a wannan wata',
+        'Net Worth Calculator': 'Kalkuleta na Darajar Kuɗi',
+        'Know Your Net Worth': 'San Darajar Kuɗinka',
+        'Personal Information': 'Bayanan Kai',
+        'Assets': 'Kaddarori',
+        'Cash and Bank Balances': 'Kuɗi da Ma’ajiyar Banki',
+        'Investments': 'Jari',
+        'Real Estate': 'Ƙasa da Gidaje',
+        'Vehicles': 'Motoci',
+        'Business Ownership': 'Mallakar Kasuwanci',
+        'Other Assets': 'Sauran Kaddarori',
+        'Liabilities': 'Bashi',
+        'Credit Card Debt': 'Bashin Katin Kiredit',
+        'Loans': 'Rancen Kuɗi',
+        'Outstanding Bills': 'Kuɗin da ba a biya ba',
+        'Other Debts': 'Sauran Basussuka',
+        'Calculate Net Worth': 'Ƙididdige Darajar Kuɗi',
+        'Total Assets': 'Jimlar Kaddarori',
+        'Total Liabilities': 'Jimlar Bashi',
+        'Net Worth': 'Darajar Kuɗi',
+        'Positive Net Worth': 'Yabanya! Bari mu ƙara girma.',
+        'Negative Net Worth': 'Mayar da hankali kan rage bashi mai yawan riba.',
+        'Asset Concentration Warning': 'Dogaro da yawa akan {asset_type}. Yi la’akari da rarrabawa.',
+        'High Debt Ratio': 'Bashi ya wuce 60% na kaddarori. Rage bashi don kwanciyar hankali.',
+        'Share Results': 'Raba Sakamakon',
+        'Net Worth Milestone': 'Alamar Darajar Kuɗi! An samu darajar kuɗi mai kyau!',
+        'Emergency Fund Calculator': 'Kalkuleta na Asusun Gaggawa',
+        'Plan Emergency Fund': 'Shirya Asusun Gaggawa',
+        'Financial Details': 'Bayanan Kuɗi',
+        'Monthly Expenses': 'Kashewar Wata-wata',
+        'Monthly Income': 'Kudaden shiga na Wata-wata',
+        'Current Savings': 'Ajiyar Yanzu',
+        'Risk Level': 'Matsayin Haɗari',
+        'Low': 'Ƙarami',
+        'Medium': 'Matsakaici',
+        'High': 'Mai Yawa',
+        'Number of Dependents': 'Yawan Masu Dogaro',
+        'Savings Timeline': 'Jadawalin Ajiya',
+        '6 Months': 'Watanni 6',
+        '12 Months': 'Watanni 12',
+        '18 Months': 'Watanni 18',
+        'Auto Email Results': 'Aika sakamakon zuwa imel dina',
+        'Calculate Fund': 'Ƙididdige Asusun',
+        'Target Fund Size': 'Girman Asusun da ake Nema',
+        'Savings Gap': 'Gibin Ajiya',
+        'Monthly Savings Goal': 'Manzon Ajiyar Wata-wata',
+        'Timeline': 'Jadawali',
+        'Fund Builder': 'Mai Gina Asusun! An ƙirƙiri shirin asusun gaggawa!',
+        'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.': 'Bisa kuɗin ka, ajiye ₦{amount}/wata don isa burin asusun gaggawa a cikin watanni {months}.',
+        'Error sending email': 'Kuskure wajen aikawa da imel'
     }
 }
 
 # Forms
 class UserForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
+    email = StringField('Email', validators=[Optional(), Email()])
     language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
     submit = SubmitField('Next')
 
@@ -210,6 +315,41 @@ class BillForm(FlaskForm):
     status = SelectField('Status', choices=[('Unpaid', 'Unpaid'), ('Paid', 'Paid')], validators=[DataRequired()])
     record_id = StringField('Record ID')
     submit = SubmitField('Save Bill')
+
+class NetWorthForm(FlaskForm):
+    # Step 1: Personal Information
+    first_name = StringField('First Name', validators=[DataRequired()])
+    email = StringField('Email', validators=[Optional(), Email()])
+    language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
+    # Step 2: Assets
+    cash = FloatField('Cash and Bank Balances', validators=[Optional(), NumberRange(min=0)], default=0)
+    investments = FloatField('Investments', validators=[Optional(), NumberRange(min=0)], default=0)
+    real_estate = FloatField('Real Estate', validators=[Optional(), NumberRange(min=0)], default=0)
+    vehicles = FloatField('Vehicles', validators=[Optional(), NumberRange(min=0)], default=0)
+    business = FloatField('Business Ownership', validators=[Optional(), NumberRange(min=0)], default=0)
+    other_assets = FloatField('Other Assets', validators=[Optional(), NumberRange(min=0)], default=0)
+    # Step 3: Liabilities
+    credit_card = FloatField('Credit Card Debt', validators=[Optional(), NumberRange(min=0)], default=0)
+    loans = FloatField('Loans', validators=[Optional(), NumberRange(min=0)], default=0)
+    other_debts = FloatField('Other Debts', validators=[Optional(), NumberRange(min=0)], default=0)
+    auto_email = SelectField('Auto Email Results', choices=[('yes', 'Yes'), ('no', 'No')], default='no')
+    submit = SubmitField('Calculate Net Worth')
+
+class EmergencyFundForm(FlaskForm):
+    # Step 1: Personal Information
+    first_name = StringField('First Name', validators=[DataRequired()])
+    email = StringField('Email', validators=[Optional(), Email()])
+    language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
+    # Step 2: Financial Details
+    monthly_expenses = FloatField('Monthly Expenses', validators=[DataRequired(), NumberRange(min=0)])
+    monthly_income = FloatField('Monthly Income', validators=[Optional(), NumberRange(min=0)], default=0)
+    current_savings = FloatField('Current Savings', validators=[Optional(), NumberRange(min=0)], default=0)
+    risk_level = SelectField('Risk Level', choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], validators=[DataRequired()])
+    dependents = IntegerField('Number of Dependents', validators=[Optional(), NumberRange(min=0)], default=0)
+    # Step 3: Savings Timeline
+    timeline = SelectField('Savings Timeline', choices=[('6', '6 Months'), ('12', '12 Months'), ('18', '18 Months')], validators=[DataRequired()])
+    auto_email = SelectField('Auto Email Results', choices=[('yes', 'Yes'), ('no', 'No')], default='no')
+    submit = SubmitField('Calculate Fund')
 
 # Bill storage
 def load_bills():
@@ -258,40 +398,32 @@ def generate_recurring_bills(bill, current_date):
     
     return [bill] + bills
 
-# Email reminder
-def send_email_reminder(to_email, user_name, bill, lang, reminder_type):
+# Email sending
+def send_email(to_email, subject, template, lang, **kwargs):
     msg = MIMEMultipart()
     msg['From'] = os.environ.get('EMAIL_USER', 'your_email@gmail.com')
     msg['To'] = to_email.lower()
-    msg['Subject'] = translations[lang]['Bill Reminder']
-    
-    reminder_text = {
-        '3_days': '3 days before due date',
-        '1_day': '1 day before due date',
-        'due_date': 'on due date'
-    }[reminder_type]
+    msg['Subject'] = subject
     
     try:
-        html = render_template('reminder_email.html',
-                            user_name=user_name,
-                            bill=bill,
-                            reminder_text=reminder_text,
-                            translations=translations[lang])
+        html = render_template(template, translations=translations[lang], **kwargs)
         msg.attach(MIMEText(html, 'html'))
     except Exception as e:
-        logger.error(f"Error rendering reminder_email.html: {e}")
-        return
+        logger.error(f"Error rendering email template {template}: {e}")
+        return False
     
     try:
         with smtplib.SMTP('smtp.gmail.com', 587) as server:
             server.starttls()
             server.login(msg['From'], os.environ.get('EMAIL_PASSWORD', 'your_app_password'))
             server.sendmail(msg['From'], msg['To'], msg.as_string())
-        logger.info(f"Sent reminder email to {to_email} for bill {bill['RecordID']} ({reminder_type})")
+        logger.info(f"Sent email to {to_email} with subject '{subject}'")
+        return True
     except Exception as e:
-        logger.error(f"Email sending failed for {to_email}, bill {bill['RecordID']}: {e}")
+        logger.error(f"Email sending failed to {to_email}: {e}")
+        return False
 
-# Scheduler for reminders
+# Scheduler for bill reminders
 scheduler = BackgroundScheduler()
 scheduler.start()
 
@@ -311,9 +443,10 @@ def schedule_reminders(bill, email, user_name, lang):
         if send_date >= datetime.now():
             job_id = f"bill_{bill['RecordID']}_{reminder}"
             scheduler.add_job(
-                send_email_reminder,
+                send_email,
                 trigger=DateTrigger(run_date=send_date),
-                args=[email, user_name, bill, lang, reminder],
+                args=[email, translations[lang]['Bill Reminder'], 'reminder_email.html', lang, 
+                      {'user_name': user_name, 'bill': bill}],
                 id=job_id
             )
             scheduled_jobs.append({
@@ -333,7 +466,6 @@ def cancel_bill_reminders(record_id):
     except Exception as e:
         logger.error(f"Error cancelling reminders for bill {record_id}: {e}")
 
-# Reload scheduled jobs on app start
 def reload_scheduled_jobs():
     bills = load_bills()
     for bill in bills:
@@ -344,9 +476,10 @@ def reload_scheduled_jobs():
             send_date = datetime.strptime(job['send_date'], '%Y-%m-%d %H:%M:%S')
             if send_date >= datetime.now():
                 scheduler.add_job(
-                    send_email_reminder,
+                    send_email,
                     trigger=DateTrigger(run_date=send_date),
-                    args=[email, user_name, bill, lang, job['reminder_type']],
+                    args=[email, translations[lang]['Bill Reminder'], 'reminder_email.html', lang, 
+                          {'user_name': user_name, 'bill': bill}],
                     id=job['job_id']
                 )
                 logger.info(f"Reloaded job {job['job_id']} for bill {bill['RecordID']}")
@@ -360,22 +493,15 @@ def fill_form():
     if form.validate_on_submit():
         try:
             session['first_name'] = form.first_name.data
-            session['email'] = form.email.data.lower()
+            session['email'] = form.email.data.lower() if form.email.data else None
             session['language'] = form.language.data
             logger.info(f"Session updated: first_name={session['first_name']}, email={session['email']}, language={session['language']}")
+            return redirect(url_for('dashboard'))
         except Exception as e:
             logger.error(f"Error updating session: {e}")
             flash(translations[lang]['Error saving user data'], 'danger')
-            return render_template('bill_form.html', form=form, translations=translations[lang])
-        return redirect(url_for('view_edit_bills'))
     
-    try:
-        return render_template('bill_form.html',
-                            form=form,
-                            translations=translations[lang])
-    except Exception as e:
-        logger.error(f"Error rendering bill_form.html: {e}")
-        raise
+    return render_template('bill_form.html', form=form, translations=translations[lang])
 
 @app.route('/view_edit_bills', methods=['GET', 'POST'])
 def view_edit_bills():
@@ -419,7 +545,7 @@ def view_edit_bills():
                     bills[i]['RecordID'] = record_id
                     break
         else:
-            bill['RecordID'] = str(len(bills) + 1)
+            bill['RecordID'] = str(uuid.uuid4())
             recurring_bills = generate_recurring_bills(bill, datetime.now())
             bills.extend(recurring_bills)
             for b in recurring_bills:
@@ -446,15 +572,11 @@ def view_edit_bills():
                 form.record_id.data = record_id
                 break
     
-    try:
-        return render_template('view_edit_bills.html',
-                            form=form,
-                            bills=filtered_bills,
-                            category=category,
-                            translations=translations[lang])
-    except Exception as e:
-        logger.error(f"Error rendering view_edit_bills.html: {e}")
-        raise
+    return render_template('view_edit_bills.html',
+                          form=form,
+                          bills=filtered_bills,
+                          category=category,
+                          translations=translations[lang])
 
 @app.route('/toggle_status/<record_id>')
 def toggle_status(record_id):
@@ -563,27 +685,280 @@ def dashboard():
         translations[lang]['Plan monthly bills to manage your budget better.']
     ]
     
-    try:
-        return render_template('dashboard.html',
-                            paid_count=paid_count,
-                            unpaid_count=unpaid_count,
-                            total_paid=total_paid,
-                            total_unpaid=total_unpaid,
-                            overdue_count=overdue_count,
-                            total_overdue=total_overdue,
-                            total_bills=total_bills,
-                            categories=categories,
-                            due_today=due_today,
-                            due_week=due_week,
-                            due_month=due_month,
-                            upcoming_bills=upcoming_bills,
-                            spending_alerts=spending_alerts,
-                            tips=tips,
-                            bills=bills,
-                            translations=translations[lang])
-    except Exception as e:
-        logger.error(f"Error rendering dashboard.html: {e}")
-        raise
+    return render_template('dashboard.html',
+                          paid_count=paid_count,
+                          unpaid_count=unpaid_count,
+                          total_paid=total_paid,
+                          total_unpaid=total_unpaid,
+                          overdue_count=overdue_count,
+                          total_overdue=total_overdue,
+                          total_bills=total_bills,
+                          categories=categories,
+                          due_today=due_today,
+                          due_week=due_week,
+                          due_month=due_month,
+                          upcoming_bills=upcoming_bills,
+                          spending_alerts=spending_alerts,
+                          tips=tips,
+                          bills=bills,
+                          translations=translations[lang])
+
+@app.route('/net_worth', methods=['GET', 'POST'])
+def net_worth():
+    form = NetWorthForm()
+    lang = session.get('language', 'en')
+    step = request.args.get('step', '1')
+    
+    if form.validate_on_submit():
+        session['net_worth_data'] = {
+            'first_name': form.first_name.data,
+            'email': form.email.data.lower() if form.email.data else None,
+            'language': form.language.data,
+            'cash': form.cash.data or 0,
+            'investments': form.investments.data or 0,
+            'real_estate': form.real_estate.data or 0,
+            'vehicles': form.vehicles.data or 0,
+            'business': form.business.data or 0,
+            'other_assets': form.other_assets.data or 0,
+            'credit_card': form.credit_card.data or 0,
+            'loans': form.loans.data or 0,
+            'other_debts': form.other_debts.data or 0,
+            'auto_email': form.auto_email.data
+        }
+        
+        # Calculate net worth
+        bills = load_bills()
+        outstanding_bills = sum(b['Amount'] for b in bills if b['Status'] == 'Unpaid')
+        total_assets = (session['net_worth_data']['cash'] +
+                       session['net_worth_data']['investments'] +
+                       session['net_worth_data']['real_estate'] +
+                       session['net_worth_data']['vehicles'] +
+                       session['net_worth_data']['business'] +
+                       session['net_worth_data']['other_assets'])
+        total_liabilities = (session['net_worth_data']['credit_card'] +
+                           session['net_worth_data']['loans'] +
+                           session['net_worth_data']['other_debts'] +
+                           outstanding_bills)
+        net_worth = total_assets - total_liabilities
+        
+        # Insights
+        insights = []
+        if net_worth >= 0:
+            insights.append(translations[lang]['Positive Net Worth'])
+        else:
+            insights.append(translations[lang]['Negative Net Worth'])
+        
+        asset_types = {
+            'cash': session['net_worth_data']['cash'],
+            'investments': session['net_worth_data']['investments'],
+            'real_estate': session['net_worth_data']['real_estate'],
+            'vehicles': session['net_worth_data']['vehicles'],
+            'business': session['net_worth_data']['business'],
+            'other_assets': session['net_worth_data']['other_assets']
+        }
+        total_assets_nonzero = sum(v for v in asset_types.values() if v > 0)
+        for asset, value in asset_types.items():
+            if total_assets_nonzero > 0 and value / total_assets_nonzero > 0.7:
+                insights.append(translations[lang]['Asset Concentration Warning'].format(
+                    asset_type=translations[lang][asset.capitalize()]
+                ))
+        
+        if total_assets > 0 and total_liabilities / total_assets > 0.6:
+            insights.append(translations[lang]['High Debt Ratio'])
+        
+        # Gamification
+        badge = translations[lang]['Net Worth Milestone'] if net_worth >= 0 else None
+        
+        # Auto-email
+        if session['net_worth_data']['auto_email'] == 'yes' and session['net_worth_data']['email']:
+            send_email(
+                session['net_worth_data']['email'],
+                translations[lang]['Net Worth Calculator'],
+                'networth_email.html',
+                lang,
+                user_name=session['net_worth_data']['first_name'],
+                total_assets=total_assets,
+                total_liabilities=total_liabilities,
+                outstanding_bills=outstanding_bills,
+                net_worth=net_worth,
+                insights=insights,
+                badge=badge
+            )
+        
+        return render_template('net_worth_dashboard.html',
+                             total_assets=total_assets,
+                             total_liabilities=total_liabilities,
+                             outstanding_bills=outstanding_bills,
+                             net_worth=net_worth,
+                             asset_data=asset_types,
+                             liability_data={
+                                 'credit_card': session['net_worth_data']['credit_card'],
+                                 'loans': session['net_worth_data']['loans'],
+                                 'outstanding_bills': outstanding_bills,
+                                 'other_debts': session['net_worth_data']['other_debts']
+                             },
+                             insights=insights,
+                             badge=badge,
+                             translations=translations[lang])
+    
+    return render_template('net_worth_form.html',
+                          form=form,
+                          step=step,
+                          translations=translations[lang])
+
+@app.route('/net_worth_share', methods=['POST'])
+def net_worth_share():
+    lang = session.get('language', 'en')
+    email = request.form.get('email')
+    if not email:
+        flash(translations[lang]['Enter your email'], 'danger')
+        return redirect(url_for('net_worth'))
+    
+    data = session.get('net_worth_data', {})
+    bills = load_bills()
+    outstanding_bills = sum(b['Amount'] for b in bills if b['Status'] == 'Unpaid')
+    total_assets = sum(data.get(k, 0) for k in ['cash', 'investments', 'real_estate', 'vehicles', 'business', 'other_assets'])
+    total_liabilities = sum(data.get(k, 0) for k in ['credit_card', 'loans', 'other_debts']) + outstanding_bills
+    net_worth = total_assets - total_liabilities
+    insights = []
+    if net_worth >= 0:
+        insights.append(translations[lang]['Positive Net Worth'])
+    else:
+        insights.append(translations[lang]['Negative Net Worth'])
+    badge = translations[lang]['Net Worth Milestone'] if net_worth >= 0 else None
+    
+    if send_email(
+        email,
+        translations[lang]['Net Worth Calculator'],
+        'networth_email.html',
+        lang,
+        user_name=data.get('first_name', 'User'),
+        total_assets=total_assets,
+        total_liabilities=total_liabilities,
+        outstanding_bills=outstanding_bills,
+        net_worth=net_worth,
+        insights=insights,
+        badge=badge
+    ):
+        flash(translations[lang]['Share Results'], 'success')
+    else:
+        flash(translations[lang]['Error sending email'], 'danger')
+    
+    return redirect(url_for('net_worth'))
+
+@app.route('/emergency_fund', methods=['GET', 'POST'])
+def emergency_fund():
+    form = EmergencyFundForm()
+    lang = session.get('language', 'en')
+    step = request.args.get('step', '1')
+    
+    bills = load_bills()
+    monthly_expenses = sum(b['Amount'] for b in bills if b['Status'] == 'Unpaid' and b['Recurrence'] in ['monthly', 'weekly'])
+    
+    if form.validate_on_submit():
+        session['emergency_fund_data'] = {
+            'first_name': form.first_name.data,
+            'email': form.email.data.lower() if form.email.data else None,
+            'language': form.language.data,
+            'monthly_expenses': form.monthly_expenses.data,
+            'monthly_income': form.monthly_income.data or 0,
+            'current_savings': form.current_savings.data or 0,
+            'risk_level': form.risk_level.data,
+            'dependents': form.dependents.data or 0,
+            'timeline': int(form.timeline.data),
+            'auto_email': form.auto_email.data
+        }
+        
+        # Calculate emergency fund
+        months = {'low': 3, 'medium': 6, 'high': 9}[session['emergency_fund_data']['risk_level']]
+        months += session['emergency_fund_data']['dependents']
+        target_fund = session['emergency_fund_data']['monthly_expenses'] * months
+        savings_gap = target_fund - session['emergency_fund_data']['current_savings']
+        monthly_savings = savings_gap / session['emergency_fund_data']['timeline'] if savings_gap > 0 else 0
+        
+        # Insights
+        insights = [
+            translations[lang]['Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.'].format(
+                amount=round(monthly_savings, 2),
+                months=session['emergency_fund_data']['timeline']
+            )
+        ]
+        
+        # Gamification
+        badge = translations[lang]['Fund Builder']
+        
+        # Auto-email
+        if session['emergency_fund_data']['auto_email'] == 'yes' and session['emergency_fund_data']['email']:
+            send_email(
+                session['emergency_fund_data']['email'],
+                translations[lang]['Emergency Fund Calculator'],
+                'fund_email.html',
+                lang,
+                user_name=session['emergency_fund_data']['first_name'],
+                target_fund=target_fund,
+                savings_gap=savings_gap,
+                monthly_savings=monthly_savings,
+                timeline=session['emergency_fund_data']['timeline'],
+                insights=insights,
+                badge=badge
+            )
+        
+        return render_template('emergency_fund_dashboard.html',
+                             target_fund=target_fund,
+                             savings_gap=savings_gap,
+                             monthly_savings=monthly_savings,
+                             timeline=session['emergency_fund_data']['timeline'],
+                             current_savings=session['emergency_fund_data']['current_savings'],
+                             insights=insights,
+                             badge=badge,
+                             translations=translations[lang])
+    
+    form.monthly_expenses.data = monthly_expenses if monthly_expenses > 0 else None
+    return render_template('emergency_fund_form.html',
+                          form=form,
+                          step=step,
+                          translations=translations[lang])
+
+@app.route('/emergency_fund_share', methods=['POST'])
+def emergency_fund_share():
+    lang = session.get('language', 'en')
+    email = request.form.get('email')
+    if not email:
+        flash(translations[lang]['Enter your email'], 'danger')
+        return redirect(url_for('emergency_fund'))
+    
+    data = session.get('emergency_fund_data', {})
+    months = {'low': 3, 'medium': 6, 'high': 9}[data.get('risk_level', 'medium')]
+    months += data.get('dependents', 0)
+    target_fund = data.get('monthly_expenses', 0) * months
+    savings_gap = target_fund - data.get('current_savings', 0)
+    monthly_savings = savings_gap / data.get('timeline', 12) if savings_gap > 0 else 0
+    insights = [
+        translations[lang]['Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.'].format(
+            amount=round(monthly_savings, 2),
+            months=data.get('timeline', 12)
+        )
+    ]
+    badge = translations[lang]['Fund Builder']
+    
+    if send_email(
+        email,
+        translations[lang]['Emergency Fund Calculator'],
+        'fund_email.html',
+        lang,
+        user_name=data.get('first_name', 'User'),
+        target_fund=target_fund,
+        savings_gap=savings_gap,
+        monthly_savings=monthly_savings,
+        timeline=data.get('timeline', 12),
+        insights=insights,
+        badge=badge
+    ):
+        flash(translations[lang]['Share Results'], 'success')
+    else:
+        flash(translations[lang]['Error sending email'], 'danger')
+    
+    return redirect(url_for('emergency_fund'))
 
 @app.route('/test_email')
 def test_email():
@@ -596,7 +971,8 @@ def test_email():
         'DueDate': datetime.now().strftime('%Y-%m-%d'),
         'RecordID': 'test'
     }
-    send_email_reminder(email, user_name, bill, lang, 'due_date')
+    send_email(email, translations[lang]['Bill Reminder'], 'reminder_email.html', lang,
+               user_name=user_name, bill=bill)
     flash(translations[lang]['Test email sent'], 'success')
     return redirect(url_for('view_edit_bills'))
 
