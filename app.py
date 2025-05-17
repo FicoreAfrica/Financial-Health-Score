@@ -264,13 +264,6 @@ def start_tool():
     
     return render_template('bill_form.html', form=form, translations=translations[lang], tool=tool)
 
-@app.route('/change_language', methods=['GET'])
-def change_language():
-    lang = request.args.get('language', 'en')
-    if lang in ['en', 'ha']:
-        session['language'] = lang
-    return redirect(request.args.get('next', url_for('index')))
-
 @app.route('/bill_form', methods=['GET', 'POST'])
 def bill_form():
     form = UserForm()
@@ -496,7 +489,7 @@ def net_worth():
             'cash': form.cash.data or 0,
             'physical_assets': form.physical_assets.data or 0,
             'investments': form.investments.data or 0,
-            'loans': form.loans.data or 0,
+            'loans': form.cash.data or 0,
             'other_debts': form.other_debts.data or 0,
             'auto_email': form.auto_email.data
         }
@@ -717,6 +710,13 @@ def emergency_fund_share():
         flash(translations[lang]['Error sending email'], 'danger')
     
     return redirect(url_for('emergency_fund'))
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    session.clear()
+    lang = session.get('language', 'en')
+    flash(translations[lang]['You have been logged out'], 'success')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
     reload_scheduled_jobs()
