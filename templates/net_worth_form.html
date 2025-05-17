@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ session.language|default('en') }}">
 <head>
     <meta charset="UTF-8">
@@ -61,6 +22,7 @@
         .progress { height: 20px; margin-bottom: 20px; }
         .tooltip-icon { cursor: pointer; color: #0288D1; margin-left: 5px; }
         .step { animation: fadeIn 0.5s; }
+        .icon { margin-right: 5px; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -90,11 +52,11 @@
                     {{ form.first_name(class="form-control", aria_label=translations['Enter your first name']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Enter your email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Optional: for sharing results">?</span></label>
+                    <label class="form-label"><span class="icon">✉️</span>{{ translations['Enter your email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Optional: for sharing results">?</span></label>
                     {{ form.email(class="form-control", aria_label=translations['Enter your email']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Choose your language'] }}</label>
+                    <label class="form-label">{{ translations['Choose your language'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Select your preferred language">?</span></label>
                     {{ form.language(class="form-select", aria_label=translations['Choose your language']) }}
                 </div>
                 <button type="button" class="btn btn-primary" onclick="showStep(2)">{{ translations['Next'] }}</button>
@@ -102,29 +64,18 @@
             <!-- Step 2: Assets -->
             <div class="step" id="step2" {% if step != '2' %}style="display: none;"{% endif %}>
                 <h3>{{ translations['Assets'] }}</h3>
+                <p>{{ translations['What do you own?'] }}</p>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Cash and Bank Balances'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Money available in hand or bank">?</span></label>
+                    <label class="form-label"><span class="icon">💵</span>{{ translations['Cash and Bank Balances'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Money saved in your bank account, mobile wallet, or cash at home">?</span></label>
                     {{ form.cash(class="form-control", placeholder="e.g., 150000", aria_label=translations['Cash and Bank Balances']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Investments'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Stocks, mutual funds, crypto">?</span></label>
-                    {{ form.investments(class="form-control", placeholder="e.g., 50000", aria_label=translations['Investments']) }}
+                    <label class="form-label"><span class="icon">🏠</span>{{ translations['Physical Assets'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Things like land, house, or car that belong to you">?</span></label>
+                    {{ form.physical_assets(class="form-control", placeholder="e.g., 1000000", aria_label=translations['Physical Assets']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Real Estate'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Land or property value">?</span></label>
-                    {{ form.real_estate(class="form-control", placeholder="e.g., 1000000", aria_label=translations['Real Estate']) }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ translations['Vehicles'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Current value of cars, bikes">?</span></label>
-                    {{ form.vehicles(class="form-control", placeholder="e.g., 200000", aria_label=translations['Vehicles']) }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ translations['Business Ownership'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Value of your business">?</span></label>
-                    {{ form.business(class="form-control", placeholder="e.g., 300000", aria_label=translations['Business Ownership']) }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ translations['Other Assets'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Jewelry, collectibles">?</span></label>
-                    {{ form.other_assets(class="form-control", placeholder="e.g., 50000", aria_label=translations['Other Assets']) }}
+                    <label class="form-label"><span class="icon">📈</span>{{ translations['Investments & Other Assets'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Any money you’ve put into farming, shares, crypto, business, or co-operative savings">?</span></label>
+                    {{ form.investments(class="form-control", placeholder="e.g., 50000", aria_label=translations['Investments & Other Assets']) }}
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="showStep(1)">{{ translations['Back'] }}</button>
                 <button type="button" class="btn btn-primary" onclick="showStep(3)">{{ translations['Next'] }}</button>
@@ -132,21 +83,18 @@
             <!-- Step 3: Liabilities -->
             <div class="step" id="step3" {% if step != '3' %}style="display: none;"{% endif %}>
                 <h3>{{ translations['Liabilities'] }}</h3>
+                <p>{{ translations['What do you owe?'] }}</p>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Credit Card Debt'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Outstanding credit card balances">?</span></label>
-                    {{ form.credit_card(class="form-control", placeholder="e.g., 20000", aria_label=translations['Credit Card Debt']) }}
-                </div>
-                <div class="mb-3">
-                    <label class="form-label">{{ translations['Loans'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Student, car, personal, mortgage loans">?</span></label>
+                    <label class="form-label"><span class="icon">📉</span>{{ translations['Loans'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Any money you borrowed from banks, apps, friends, or cooperative societies">?</span></label>
                     {{ form.loans(class="form-control", placeholder="e.g., 100000", aria_label=translations['Loans']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Other Debts'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Other outstanding debts">?</span></label>
+                    <label class="form-label"><span class="icon">📉</span>{{ translations['Other Debts'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Outstanding school fees, rent advance, or unpaid bills">?</span></label>
                     {{ form.other_debts(class="form-control", placeholder="e.g., 30000", aria_label=translations['Other Debts']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Auto Email Results'] }}</label>
-                    {{ form.auto_email(class="form-select", aria_label=translations['Auto Email Results']) }}
+                    <label class="form-label"><span class="icon">✉️</span>{{ translations['Send Results to My Email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Get your full net worth result sent to your inbox (optional)">?</span></label>
+                    {{ form.auto_email(class="form-check-input", aria_label=translations['Send Results to My Email']) }}
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="showStep(2)">{{ translations['Back'] }}</button>
                 <button type="submit" class="btn btn-primary">{{ translations['Calculate Net Worth'] }}</button>
