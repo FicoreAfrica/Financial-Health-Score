@@ -241,8 +241,7 @@ def reload_scheduled_jobs():
 @app.route('/', methods=['GET'])
 def index():
     lang = session.get('language', 'en')
-    form = UserForm()
-    return render_template('index.html', translations=translations[lang], language=lang, form=form)
+    return render_template('index.html', translations=translations[lang], language=lang)
 
 @app.route('/start_tool', methods=['POST'])
 def start_tool():
@@ -257,7 +256,7 @@ def start_tool():
             session['language'] = form.language.data
             logger.info(f"Session updated: first_name={session['first_name']}, email={session['email']}, language={session['language']}")
             if tool == 'bill_planner':
-                return redirect(url_for('view_edit_bills'))
+                return redirect(url_for('fill_form'))
             elif tool == 'net_worth':
                 return redirect(url_for('net_worth'))
             elif tool == 'emergency_fund':
@@ -275,6 +274,17 @@ def change_language():
     if lang in ['en', 'ha']:
         session['language'] = lang
     return redirect(request.args.get('next', url_for('index')))
+
+@app.route('/fill_form', methods=['GET', 'POST'])
+def fill_form():
+    form = UserForm()
+    lang = session.get('language', 'en')
+    if form.validate_on_submit():
+        session['first_name'] = form.first_name.data
+        session['email'] = form.email.data.lower() if form.email.data else None
+        session['language'] = form.language.data
+        return redirect(url_for('view_edit_bills'))
+    return render_template('fill_form.html', form=form, translations=translations[lang], language=lang)
 
 @app.route('/view_edit_bills', methods=['GET', 'POST'])
 def view_edit_bills():
