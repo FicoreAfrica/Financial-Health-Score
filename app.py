@@ -8,7 +8,7 @@ from email.mime.multipart import MIMEMultipart
 import uuid
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField
+from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField, BooleanField
 from wtforms.validators import DataRequired, Email, NumberRange, Optional
 from flask_session import Session
 from dotenv import load_dotenv
@@ -80,15 +80,11 @@ class NetWorthForm(FlaskForm):
     email = StringField('Email', validators=[Optional(), Email()])
     language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
     cash = FloatField('Cash and Bank Balances', validators=[Optional(), NumberRange(min=0)], default=0)
-    investments = FloatField('Investments', validators=[Optional(), NumberRange(min=0)], default=0)
-    real_estate = FloatField('Real Estate', validators=[Optional(), NumberRange(min=0)], default=0)
-    vehicles = FloatField('Vehicles', validators=[Optional(), NumberRange(min=0)], default=0)
-    business = FloatField('Business Ownership', validators=[Optional(), NumberRange(min=0)], default=0)
-    other_assets = FloatField('Other Assets', validators=[Optional(), NumberRange(min=0)], default=0)
-    credit_card = FloatField('Credit Card Debt', validators=[Optional(), NumberRange(min=0)], default=0)
+    physical_assets = FloatField('Physical Assets', validators=[Optional(), NumberRange(min=0)], default=0)
+    investments = FloatField('Investments & Other Assets', validators=[Optional(), NumberRange(min=0)], default=0)
     loans = FloatField('Loans', validators=[Optional(), NumberRange(min=0)], default=0)
     other_debts = FloatField('Other Debts', validators=[Optional(), NumberRange(min=0)], default=0)
-    auto_email = SelectField('Auto Email Results', choices=[('yes', 'Yes'), ('no', 'No')], default='no')
+    auto_email = BooleanField('Send Results to My Email', default=False)
     submit = SubmitField('Calculate Net Worth')
 
 class EmergencyFundForm(FlaskForm):
@@ -98,10 +94,10 @@ class EmergencyFundForm(FlaskForm):
     monthly_expenses = FloatField('Monthly Expenses', validators=[DataRequired(), NumberRange(min=0)])
     monthly_income = FloatField('Monthly Income', validators=[Optional(), NumberRange(min=0)], default=0)
     current_savings = FloatField('Current Savings', validators=[Optional(), NumberRange(min=0)], default=0)
-    risk_level = SelectField('Risk Level', choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], validators=[DataRequired()])
+    risk_tolerance_level = SelectField('Risk Tolerance Level', choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], validators=[DataRequired()])
     dependents = IntegerField('Number of Dependents', validators=[Optional(), NumberRange(min=0)], default=0)
-    timeline = SelectField('Savings Timeline', choices=[('6', '6 Months'), ('12', '12 Months'), ('18', '18 Months')], validators=[DataRequired()])
-    auto_email = SelectField('Auto Email Results', choices=[('yes', 'Yes'), ('no', 'No')], default='no')
+    timeline = SelectField('How long are you willing to save for?', choices=[('6', '6 Months'), ('12', '12 Months'), ('18', '18 Months')], validators=[DataRequired()])
+    auto_email = BooleanField('Send Results to My Email', default=False)
     submit = SubmitField('Calculate Fund')
 
 # Bill storage
@@ -256,7 +252,7 @@ def start_tool():
             session['language'] = form.language.data
             logger.info(f"Session updated: first_name={session['first_name']}, email={session['email']}, language={session['language']}")
             if tool == 'bill_planner':
-                return redirect(url_for('fill_form'))
+                return redirect(url_for('bill_form'))
             elif tool == 'net_worth':
                 return redirect(url_for('net_worth'))
             elif tool == 'emergency_fund':
@@ -275,8 +271,8 @@ def change_language():
         session['language'] = lang
     return redirect(request.args.get('next', url_for('index')))
 
-@app.route('/fill_form', methods=['GET', 'POST'])
-def fill_form():
+@app.route('/bill_form', methods=['GET', 'POST'])
+def bill_form():
     form = UserForm()
     lang = session.get('language', 'en')
     if form.validate_on_submit():
@@ -284,7 +280,7 @@ def fill_form():
         session['email'] = form.email.data.lower() if form.email.data else None
         session['language'] = form.language.data
         return redirect(url_for('view_edit_bills'))
-    return render_template('fill_form.html', form=form, translations=translations[lang], language=lang)
+    return render_template('bill_form.html', form=form, translations=translations[lang], language=lang)
 
 @app.route('/view_edit_bills', methods=['GET', 'POST'])
 def view_edit_bills():
@@ -498,12 +494,8 @@ def net_worth():
             'email': form.email.data.lower() if form.email.data else None,
             'language': form.language.data,
             'cash': form.cash.data or 0,
+            'physical_assets': form.physical_assets.data or 0,
             'investments': form.investments.data or 0,
-            'real_estate': form.real_estate.data or 0,
-            'vehicles': form.vehicles.data or 0,
-            'business': form.business.data or 0,
-            'other_assets': form.other_assets.data or 0,
-            'credit_card': form.credit_card.data or 0,
             'loans': form.loans.data or 0,
             'other_debts': form.other_debts.data or 0,
             'auto_email': form.auto_email.data
@@ -512,13 +504,9 @@ def net_worth():
         bills = load_bills()
         outstanding_bills = sum(b['Amount'] for b in bills if b['Status'] == 'Unpaid')
         total_assets = (session['net_worth_data']['cash'] +
-                       session['net_worth_data']['investments'] +
-                       session['net_worth_data']['real_estate'] +
-                       session['net_worth_data']['vehicles'] +
-                       session['net_worth_data']['business'] +
-                       session['net_worth_data']['other_assets'])
-        total_liabilities = (session['net_worth_data']['credit_card'] +
-                           session['net_worth_data']['loans'] +
+                       session['net_worth_data']['physical_assets'] +
+                       session['net_worth_data']['investments'])
+        total_liabilities = (session['net_worth_data']['loans'] +
                            session['net_worth_data']['other_debts'] +
                            outstanding_bills)
         net_worth = total_assets - total_liabilities
@@ -531,11 +519,8 @@ def net_worth():
         
         asset_types = {
             'cash': session['net_worth_data']['cash'],
-            'investments': session['net_worth_data']['investments'],
-            'real_estate': session['net_worth_data']['real_estate'],
-            'vehicles': session['net_worth_data']['vehicles'],
-            'business': session['net_worth_data']['business'],
-            'other_assets': session['net_worth_data']['other_assets']
+            'physical_assets': session['net_worth_data']['physical_assets'],
+            'investments': session['net_worth_data']['investments']
         }
         total_assets_nonzero = sum(v for v in asset_types.values() if v > 0)
         for asset, value in asset_types.items():
@@ -549,7 +534,7 @@ def net_worth():
         
         badge = translations[lang]['Net Worth Milestone'] if net_worth >= 0 else None
         
-        if session['net_worth_data']['auto_email'] == 'yes' and session['net_worth_data']['email']:
+        if session['net_worth_data']['auto_email'] and session['net_worth_data']['email']:
             send_email(
                 session['net_worth_data']['email'],
                 translations[lang]['Net Worth Calculator'],
@@ -571,10 +556,9 @@ def net_worth():
                              net_worth=net_worth,
                              asset_data=asset_types,
                              liability_data={
-                                 'credit_card': session['net_worth_data']['credit_card'],
                                  'loans': session['net_worth_data']['loans'],
-                                 'outstanding_bills': outstanding_bills,
-                                 'other_debts': session['net_worth_data']['other_debts']
+                                 'other_debts': session['net_worth_data']['other_debts'],
+                                 'outstanding_bills': outstanding_bills
                              },
                              insights=insights,
                              badge=badge,
@@ -596,8 +580,8 @@ def net_worth_share():
     data = session.get('net_worth_data', {})
     bills = load_bills()
     outstanding_bills = sum(b['Amount'] for b in bills if b['Status'] == 'Unpaid')
-    total_assets = sum(data.get(k, 0) for k in ['cash', 'investments', 'real_estate', 'vehicles', 'business', 'other_assets'])
-    total_liabilities = sum(data.get(k, 0) for k in ['credit_card', 'loans', 'other_debts']) + outstanding_bills
+    total_assets = sum(data.get(k, 0) for k in ['cash', 'physical_assets', 'investments'])
+    total_liabilities = sum(data.get(k, 0) for k in ['loans', 'other_debts']) + outstanding_bills
     net_worth = total_assets - total_liabilities
     insights = []
     if net_worth >= 0:
@@ -642,38 +626,38 @@ def emergency_fund():
             'monthly_expenses': form.monthly_expenses.data,
             'monthly_income': form.monthly_income.data or 0,
             'current_savings': form.current_savings.data or 0,
-            'risk_level': form.risk_level.data,
+            'risk_tolerance_level': form.risk_tolerance_level.data,
             'dependents': form.dependents.data or 0,
             'timeline': int(form.timeline.data),
             'auto_email': form.auto_email.data
         }
         
-        months = {'low': 3, 'medium': 6, 'high': 9}[session['emergency_fund_data']['risk_level']]
+        months = {'low': 3, 'medium': 6, 'high': 9}[session['emergency_fund_data']['risk_tolerance_level']]
         months += session['emergency_fund_data']['dependents']
         target_fund = session['emergency_fund_data']['monthly_expenses'] * months
         savings_gap = target_fund - session['emergency_fund_data']['current_savings']
         monthly_savings = savings_gap / session['emergency_fund_data']['timeline'] if savings_gap > 0 else 0
         
-        insights = [
-            translations[lang]['Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.'].format(
-                amount=round(monthly_savings, 2),
-                months=session['emergency_fund_data']['timeline']
-            )
-        ]
+        insights = []
+        if monthly_savings > session['emergency_fund_data']['monthly_income'] * 0.3:
+            insights.append(translations[lang]['High Savings Requirement'])
+        if target_fund <= session['emergency_fund_data']['current_savings']:
+            insights.append(translations[lang]['Sufficient Emergency Fund'])
         
-        badge = translations[lang]['Fund Builder']
+        badge = translations[lang]['Emergency Fund Milestone'] if target_fund <= session['emergency_fund_data']['current_savings'] else None
         
-        if session['emergency_fund_data']['auto_email'] == 'yes' and session['emergency_fund_data']['email']:
+        if session['emergency_fund_data']['auto_email'] and session['emergency_fund_data']['email']:
             send_email(
                 session['emergency_fund_data']['email'],
                 translations[lang]['Emergency Fund Calculator'],
-                'fund_email.html',
+                'emergencyfund_email.html',
                 lang,
                 user_name=session['emergency_fund_data']['first_name'],
                 target_fund=target_fund,
                 savings_gap=savings_gap,
                 monthly_savings=monthly_savings,
-                timeline=session['emergency_fund_data']['timeline'],
+                current_savings=session['emergency_fund_data']['current_savings'],
+                months=months,
                 insights=insights,
                 badge=badge
             )
@@ -682,16 +666,16 @@ def emergency_fund():
                              target_fund=target_fund,
                              savings_gap=savings_gap,
                              monthly_savings=monthly_savings,
-                             timeline=session['emergency_fund_data']['timeline'],
                              current_savings=session['emergency_fund_data']['current_savings'],
+                             months=months,
                              insights=insights,
                              badge=badge,
                              translations=translations[lang])
     
-    form.monthly_expenses.data = monthly_expenses if monthly_expenses > 0 else None
     return render_template('emergency_fund_form.html',
                           form=form,
                           step=step,
+                          monthly_expenses=monthly_expenses,
                           translations=translations[lang])
 
 @app.route('/emergency_fund_share', methods=['POST'])
@@ -703,29 +687,28 @@ def emergency_fund_share():
         return redirect(url_for('emergency_fund'))
     
     data = session.get('emergency_fund_data', {})
-    months = {'low': 3, 'medium': 6, 'high': 9}[data.get('risk_level', 'medium')]
-    months += data.get('dependents', 0)
+    months = {'low': 3, 'medium': 6, 'high': 9}[data.get('risk_tolerance_level', 'medium')] + data.get('dependents', 0)
     target_fund = data.get('monthly_expenses', 0) * months
     savings_gap = target_fund - data.get('current_savings', 0)
     monthly_savings = savings_gap / data.get('timeline', 12) if savings_gap > 0 else 0
-    insights = [
-        translations[lang]['Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.'].format(
-            amount=round(monthly_savings, 2),
-            months=data.get('timeline', 12)
-        )
-    ]
-    badge = translations[lang]['Fund Builder']
+    insights = []
+    if monthly_savings > data.get('monthly_income', 0) * 0.3:
+        insights.append(translations[lang]['High Savings Requirement'])
+    if target_fund <= data.get('current_savings', 0):
+        insights.append(translations[lang]['Sufficient Emergency Fund'])
+    badge = translations[lang]['Emergency Fund Milestone'] if target_fund <= data.get('current_savings', 0) else None
     
     if send_email(
         email,
         translations[lang]['Emergency Fund Calculator'],
-        'fund_email.html',
+        'emergencyfund_email.html',
         lang,
         user_name=data.get('first_name', 'User'),
         target_fund=target_fund,
         savings_gap=savings_gap,
         monthly_savings=monthly_savings,
-        timeline=data.get('timeline', 12),
+        current_savings=data.get('current_savings', 0),
+        months=months,
         insights=insights,
         badge=badge
     ):
@@ -735,29 +718,6 @@ def emergency_fund_share():
     
     return redirect(url_for('emergency_fund'))
 
-@app.route('/logout', methods=['GET'])
-def logout():
-    session.clear()
-    return redirect(url_for('index'))
-
-@app.route('/test_email')
-def test_email():
-    lang = session.get('language', 'en')
-    email = session.get('email', 'test@example.com')
-    user_name = session.get('first_name', 'Test User')
-    bill = {
-        'Description': 'Test Bill',
-        'Amount': 1000.0,
-        'DueDate': datetime.now().strftime('%Y-%m-%d'),
-        'RecordID': 'test'
-    }
-    send_email(email, translations[lang]['Bill Reminder'], 'reminder_email.html', lang,
-               user_name=user_name, bill=bill)
-    flash(translations[lang]['Test email sent'], 'success')
-    return redirect(url_for('view_edit_bills'))
-
-# Initialize scheduler
-reload_scheduled_jobs()
-
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))
+    reload_scheduled_jobs()
+    app.run(debug=True)
