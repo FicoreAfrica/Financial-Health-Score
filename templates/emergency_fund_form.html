@@ -1,43 +1,4 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ session.language|default('en') }}">
 <head>
     <meta charset="UTF-8">
@@ -61,6 +22,7 @@
         .progress { height: 20px; margin-bottom: 20px; }
         .tooltip-icon { cursor: pointer; color: #0288D1; margin-left: 5px; }
         .step { animation: fadeIn 0.5s; }
+        .icon { margin-right: 5px; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
@@ -90,11 +52,11 @@
                     {{ form.first_name(class="form-control", aria_label=translations['Enter your first name']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Enter your email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Optional: for sharing results">?</span></label>
+                    <label class="form-label"><span class="icon">✉️</span>{{ translations['Enter your email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Optional: for sharing results">?</span></label>
                     {{ form.email(class="form-control", aria_label=translations['Enter your email']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Choose your language'] }}</label>
+                    <label class="form-label">{{ translations['Choose your language'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Select your preferred language">?</span></label>
                     {{ form.language(class="form-select", aria_label=translations['Choose your language']) }}
                 </div>
                 <button type="button" class="btn btn-primary" onclick="showStep(2)">{{ translations['Next'] }}</button>
@@ -103,23 +65,23 @@
             <div class="step" id="step2" {% if step != '2' %}style="display: none;"{% endif %}>
                 <h3>{{ translations['Financial Details'] }}</h3>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Monthly Expenses'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Include rent, food, transport, bills">?</span></label>
-                    {{ form.monthly_expenses(class="form-control", placeholder="e.g., 50000", aria_label=translations['Monthly Expenses']) }}
+                    <label class="form-label"><span class="icon">💵</span>{{ translations['Monthly Expenses'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Your regular costs like rent, food, transport, and bills">?</span></label>
+                    {{ form.monthly_expenses(class="form-control", placeholder="e.g., 50000", value=monthly_expenses, aria_label=translations['Monthly Expenses']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Monthly Income'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Your monthly take-home pay">?</span></label>
+                    <label class="form-label"><span class="icon">💵</span>{{ translations['Monthly Income'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Money you earn each month after taxes">?</span></label>
                     {{ form.monthly_income(class="form-control", placeholder="e.g., 100000", aria_label=translations['Monthly Income']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Current Savings'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Money saved for emergencies">?</span></label>
+                    <label class="form-label"><span class="icon">💵</span>{{ translations['Current Savings'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Money you’ve already saved for emergencies">?</span></label>
                     {{ form.current_savings(class="form-control", placeholder="e.g., 20000", aria_label=translations['Current Savings']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Risk Level'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Job stability and income predictability">?</span></label>
-                    {{ form.risk_level(class="form-select", aria_label=translations['Risk Level']) }}
+                    <label class="form-label"><span class="icon">⚖️</span>{{ translations['Risk Tolerance Level'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="How stable is your job or income? Low means very stable, high means less predictable">?</span></label>
+                    {{ form.risk_tolerance_level(class="form-select", aria_label=translations['Risk Tolerance Level']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Number of Dependents'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="People relying on your income">?</span></label>
+                    <label class="form-label"><span class="icon">👨‍👩‍👧</span>{{ translations['Number of Dependents'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Number of people relying on your income, like children or parents">?</span></label>
                     {{ form.dependents(class="form-control", placeholder="e.g., 2", aria_label=translations['Number of Dependents']) }}
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="showStep(1)">{{ translations['Back'] }}</button>
@@ -129,12 +91,12 @@
             <div class="step" id="step3" {% if step != '3' %}style="display: none;"{% endif %}>
                 <h3>{{ translations['Savings Timeline'] }}</h3>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Timeline'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="How long to build your fund">?</span></label>
-                    {{ form.timeline(class="form-select", aria_label=translations['Timeline']) }}
+                    <label class="form-label"><span class="icon">⏳</span>{{ translations['How long are you willing to save for?'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="How many months you plan to save to build your emergency fund">?</span></label>
+                    {{ form.timeline(class="form-select", aria_label=translations['How long are you willing to save for?']) }}
                 </div>
                 <div class="mb-3">
-                    <label class="form-label">{{ translations['Auto Email Results'] }}</label>
-                    {{ form.auto_email(class="form-select", aria_label=translations['Auto Email Results']) }}
+                    <label class="form-label"><span class="icon">✉️</span>{{ translations['Send Results to My Email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Get your emergency fund plan sent to your inbox (optional)">?</span></label>
+                    {{ form.auto_email(class="form-check-input", aria_label=translations['Send Results to My Email']) }}
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="showStep(2)">{{ translations['Back'] }}</button>
                 <button type="submit" class="btn btn-primary">{{ translations['Calculate Fund'] }}</button>
