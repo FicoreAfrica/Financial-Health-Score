@@ -236,47 +236,40 @@
             margin-bottom: 20px;
         }
         .tool-card .btn {
-            padding: 12px 25px;
+            padding: 15px 30px;
             background: linear-gradient(135deg, #2E7D32, #0288D1);
             color: white;
             text-decoration: none;
             border-radius: 5px;
-            font-size: 1rem;
+            font-size: 1.1rem;
+            font-weight: bold;
             display: inline-block;
             white-space: nowrap;
             border: none;
             cursor: pointer;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
         }
         .tool-card .btn:hover {
             background: linear-gradient(135deg, #1B5E20, #01579B);
         }
         .tool-card .notify-me {
-            padding: 12px 25px;
+            padding: 15px 30px;
             background: #B0BEC5;
             color: white;
             text-decoration: none;
             border-radius: 5px;
-            font-size: 1rem;
+            font-size: 1.1rem;
             display: inline-block;
             cursor: pointer;
             white-space: nowrap;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
         }
         .tool-card .notify-me:hover {
             background: #90A4AE;
-        }
-        .tool-card form {
-            margin-top: 10px;
-        }
-        .tool-card input, .tool-card select {
-            width: 100%;
-            padding: 8px;
-            margin-bottom: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 0.9rem;
-        }
-        .tool-card input[type="hidden"], .tool-card input[name="csrf_token"] {
-            display: none;
         }
         .testimonials-section {
             margin-top: 40px;
@@ -481,77 +474,25 @@
     <section class="hero">
         <h2>{{ translations.get('Your All-in-One Toolkit for Personal & SME Financial Health Across Africa', 'Your All-in-One Toolkit for Personal & SME Financial Health Across Africa') }}</h2>
         <p>{{ translations.get('Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.', 'Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.') }}</p>
-        <form action="{{ url_for('start_tool') }}" method="POST">
-            <input type="hidden" name="tool" value="bill_planner">
-            {{ form.csrf_token }}
-            <label for="first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
-            <input type="text" id="first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
-            <label for="email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
-            <input type="email" id="email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
-            <label for="language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
-            <select id="language" name="language" required>
-                <option value="en">{{ translations.get('English', 'English') }}</option>
-                <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
-            </select>
-            <button type="submit" class="cta-button">{{ translations.get('Get Started', 'Get Started') }}</button>
-        </form>
+        <a href="#tools-section" class="cta-button">{{ translations.get('Explore Tools', 'Explore Tools') }}</a>
     </section>
-    <section class="tools-section">
+    <section class="tools-section" id="tools-section">
         <h2>{{ translations.get('Choose a Tool', 'Choose a Tool') }}</h2>
         <div class="tools-grid">
             <div class="tool-card">
                 <h3>{{ translations.get('Bill Planner', 'Bill Planner') }}</h3>
                 <p>{{ translations.get('Manage and mark bills as paid', 'Manage and mark bills as paid') }}</p>
-                <form action="{{ url_for('start_tool') }}" method="POST">
-                    <input type="hidden" name="tool" value="bill_planner">
-                    {{ form.csrf_token }}
-                    <label for="bill_first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
-                    <input type="text" id="bill_first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
-                    <label for="bill_email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
-                    <input type="email" id="bill_email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
-                    <label for="bill_language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
-                    <select id="bill_language" name="language" required>
-                        <option value="en">{{ translations.get('English', 'English') }}</option>
-                        <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
-                    </select>
-                    <button type="submit" class="btn" aria-label="{{ translations.get('Start Bill Planner', 'Start Bill Planner') }}">{{ translations.get('Start', 'Start') }}</button>
-                </form>
+                <a href="{{ url_for('fill_form') }}" class="btn" aria-label="{{ translations.get('Start Bill Planner', 'Start Bill Planner') }}">{{ translations.get('Start', 'Start') }}</a>
             </div>
             <div class="tool-card">
                 <h3>{{ translations.get('Net Worth Calculator', 'Net Worth Calculator') }}</h3>
                 <p>{{ translations.get('Net worth is assets minus liabilities', 'Net worth is assets minus liabilities') }}</p>
-                <form action="{{ url_for('start_tool') }}" method="POST">
-                    <input type="hidden" name="tool" value="net_worth">
-                    {{ form.csrf_token }}
-                    <label for="networth_first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
-                    <input type="text" id="networth_first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
-                    <label for="networth_email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
-                    <input type="email" id="networth_email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
-                    <label for="networth_language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
-                    <select id="networth_language" name="language" required>
-                        <option value="en">{{ translations.get('English', 'English') }}</option>
-                        <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
-                    </select>
-                    <button type="submit" class="btn" aria-label="{{ translations.get('Start Net Worth Calculator', 'Start Net Worth Calculator') }}">{{ translations.get('Start', 'Start') }}</button>
-                </form>
+                <a href="{{ url_for('net_worth') }}" class="btn" aria-label="{{ translations.get('Start Net Worth Calculator', 'Start Net Worth Calculator') }}">{{ translations.get('Start', 'Start') }}</a>
             </div>
             <div class="tool-card">
                 <h3>{{ translations.get('Emergency Fund Calculator', 'Emergency Fund Calculator') }}</h3>
                 <p>{{ translations.get('Aims to cover 3-6 months of expenses for financial security', 'Aims to cover 3-6 months of expenses for financial security') }}</p>
-                <form action="{{ url_for('start_tool') }}" method="POST">
-                    <input type="hidden" name="tool" value="emergency_fund">
-                    {{ form.csrf_token }}
-                    <label for="fund_first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
-                    <input type="text" id="fund_first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
-                    <label for="fund_email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
-                    <input type="email" id="fund_email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
-                    <label for="fund_language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
-                    <select id="fund_language" name="language" required>
-                        <option value="en">{{ translations.get('English', 'English') }}</option>
-                        <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
-                    </select>
-                    <button type="submit" class="btn" aria-label="{{ translations.get('Start Emergency Fund Calculator', 'Start Emergency Fund Calculator') }}">{{ translations.get('Start', 'Start') }}</button>
-                </form>
+                <a href="{{ url_for('emergency_fund') }}" class="btn" aria-label="{{ translations.get('Start Emergency Fund Calculator', 'Start Emergency Fund Calculator') }}">{{ translations.get('Start', 'Start') }}</a>
             </div>
             <div class="tool-card">
                 <h3>{{ translations.get('Financial Health Score', 'Financial Health Score') }}</h3>
