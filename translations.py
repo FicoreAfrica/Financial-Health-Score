@@ -1,5 +1,6 @@
 translations = {
     'en': {
+        # Keys from your shared version (conflicts resolved by retaining your version)
         'Bill Planner': 'Bill Planner',
         'Financial growth passport for Africa': 'Financial growth passport for Africa',
         'Enter your first name': 'Enter your first name',
@@ -119,9 +120,36 @@ translations = {
         'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.': 'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.',
         'Error sending email': 'Error sending email',
         'Error saving user data': 'Error saving user data',
-        'Test email sent': 'Test email sent'
+        'Test email sent': 'Test email sent',
+
+        # Unique keys from current translations.py (not in your version)
+        'Language changed successfully': 'Language changed successfully',
+        'Invalid language selected': 'Invalid language selected',
+        'You have been logged out': 'You have been logged out',
+        'High Savings Requirement': 'Your monthly savings goal exceeds 30% of your income. Consider a longer timeline.',
+        'Sufficient Emergency Fund': 'You have enough savings for emergencies. Well done!',
+        'Emergency Fund Milestone': 'Emergency Fund Milestone Achieved!',
+        'Emergency Fund Dashboard': 'Emergency Fund Dashboard',
+        'Target Fund': 'Target Fund',
+        'Monthly Savings': 'Monthly Savings',
+        'Savings Breakdown': 'Savings Breakdown',
+        'Insights': 'Insights',
+        'Every step towards saving builds your financial safety net.': 'Every step towards saving builds your financial safety net.',
+        'Export as PDF': 'Export as PDF',
+        'Recalculate': 'Recalculate',
+        'Net Worth Dashboard': 'Net Worth Dashboard',
+        'You own': 'You own',
+        'You owe': 'You owe',
+        'Badge': 'Badge',
+        'Even small savings or assets count. Knowing your net worth helps you grow.': 'Even small savings or assets count. Knowing your net worth helps you grow.',
+        'Investments & Other Assets': 'Investments & Other Assets',
+        'Risk Tolerance Level': 'Risk Tolerance Level',
+        'How long are you willing to save for?': 'How long are you willing to save for?',
+        'Send Results to My Email': 'Send Results to My Email',
+        'Months': 'Months'
     },
     'ha': {
+        # Keys from your shared version (conflicts resolved by retaining your version)
         'Bill Planner': 'Mai Tsara Kuɗi',
         'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don Afirka',
         'Enter your first name': 'Shigar da sunanka na farko',
@@ -183,12 +211,12 @@ translations = {
         'Plan monthly bills to manage your budget better.': 'Tsara kuɗin kowane wata don sarrafa kasafin kuɗin ka mafi kyau.',
         'Dear': 'Masoyi',
         'Bill Reminder': 'Tunatarwar Kuɗi',
-        'Your bill is due soon': 'Kuɗin ka yana kusa da karewa',
-        'Due': 'Karewa',
+        'Your bill is due soon': 'Kuɗin ka yana kusa da Ranar Biya',
+        'Due': 'Ranar Biya',
         'Pay now to avoid late fees': 'Biya yanzu don guje wa jaruman jinkiri',
         'Manage your bills': 'Sarrafa kuɗin ka',
         'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka',
-        'Due date must be today or in the future': 'Ranar karewa dole ne ta kasance yau ko a nan gaba',
+        'Due date must be today or in the future': 'Ranar Biya dole ne ta kasance yau ko a nan gaba',
         'Spending Limit Exceeded': 'Ka wuce ₦{limit} akan {category} a wannan wata',
         'Net Worth Calculator': 'Kalkuleta na Darajar Kuɗi',
         'Know Your Net Worth': 'San Darajar Kuɗinka',
@@ -241,6 +269,32 @@ translations = {
         'Error sending email': 'Kuskure wajen aikawa da imel',
         'Error saving user data': 'Kuskure wajen ajiye bayani mai amfani',
         'Get Started': 'Fara',
-        'Test email sent': 'An aika imel na gwaji'
+        'Test email sent': 'An aika imel na gwaji',
+
+        # Unique keys from current translations.py (not in your version)
+        'Language changed successfully': 'An canza harshe cikin nasara',
+        'Invalid language selected': 'Harshe mara inganci da aka zaɓa',
+        'You have been logged out': 'An fitar da ku daga shiga',
+        'High Savings Requirement': 'Adadin ajiyar ku na wata ya wuce 30% na kuɗin shiga. Ka yi la’akari da tsawon lokaci.',
+        'Sufficient Emergency Fund': 'Kuna da isasshen ajiya don gaggawa. Da kyau!',
+        'Emergency Fund Milestone': 'An Cimma Burin Asusun Gaggawa!',
+        'Emergency Fund Dashboard': 'Dashboard na Asusun Gaggawa',
+        'Target Fund': 'Manufar Asusun',
+        'Monthly Savings': 'Ajiyar Wata',
+        'Savings Breakdown': 'Rarraba Ajiya',
+        'Insights': 'Hasashe',
+        'Every step towards saving builds your financial safety net.': 'Kowane mataki na ajiya yana ƙarfafa tsarin kuɗin ku.',
+        'Export as PDF': 'Fitar da PDF',
+        'Recalculate': 'Sake Ƙididdigewa',
+        'Net Worth Dashboard': 'Dashboard na Darajar Kuɗi',
+        'You own': 'Kuna mallaka',
+        'You owe': 'Kuna bin bashi',
+        'Badge': 'Lamba',
+        'Even small savings or assets count. Knowing your net worth helps you grow.': 'Ko ƙananan ajiya ko kadarori suna da amfani. Sanin darajar kuɗin ku yana taimaka muku ci gaba.',
+        'Investments & Other Assets': 'Zuba Jari da Sauran Kadarori',
+        'Risk Tolerance Level': 'Matsayin Haɗari',
+        'How long are you willing to save for?': 'Har yaushe kake shirye ka ajiye kuɗi?',
+        'Send Results to My Email': 'Aika sakamakon zuwa imel dina',
+        'Months': 'Watanni'
     }
 }
