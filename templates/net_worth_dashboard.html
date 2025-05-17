@@ -1,48 +1,9 @@
-<script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
-        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
-            try {
-                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
-                var firstSheetName = workbook.SheetNames[0];
-                var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
-                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
-                var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
-                var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
-                );
-                // Fallback
-                if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
-                }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
-                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
-                return csv;
-            } catch (e) {
-                console.error(e);
-                return "";
-            }
-        }
-        return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="{{ session.language|default('en') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ translations['Net Worth Calculator'] }}</title>
+    <title>{{ translations['Net Worth Dashboard'] }}</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/styles.css" rel="stylesheet">
     <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
@@ -50,163 +11,54 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
     <style>
         body { font-family: Arial, sans-serif; background-color: #f4f4f4; }
-        .container { max-width: 800px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+        .container { max-width: 700px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
         .header { text-align: center; padding: 10px; background: #1E7F71; color: #fff; border-radius: 8px 8px 0 0; }
         .logo { display: block; margin: 0 auto 10px; max-width: 150px; }
-        .stat { font-size: 1.2em; margin: 10px 0; }
-        .chart { margin: 20px 0; }
-        .insights { background: #e8f4f8; padding: 15px; border-radius: 5px; }
-        .btn-primary { background: #2E7D32; border: none; font-size: 1.1em; }
+        .summary-bar { background: #e9ecef; padding: 15px; border-radius: 5px; margin-bottom: 20px; }
+        .tip { font-style: italic; color: #555; margin-top: 20px; }
+        .btn-primary { background: #2E7D32; border: none; }
         .btn-primary:hover { background: #0288D1; }
-        .badge { font-size: 1em; color: #2E7D32; margin: 10px 0; }
-        .net-worth-positive { color: green; }
-        .net-worth-negative { color: red; }
-        @media (max-width: 576px) { .chart { max-height: 300px; } }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
             <img src="/static/img/ficore_logo.png" alt="Ficore Africa Logo" class="logo">
-            <h2>{{ translations['Net Worth Calculator'] }}</h2>
+            <h2>{{ translations['Net Worth Dashboard'] }}</h2>
         </div>
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
-        <div class="stat">
-            <strong>{{ translations['Total Assets'] }}:</strong> ₦{{ total_assets|round(2) }}
+        <div class="summary-bar">
+            <p><strong>{{ translations['You own'] }}:</strong> ₦{{ "{:,.2f}".format(total_assets) }} | 
+               <strong>{{ translations['You owe'] }}:</strong> ₦{{ "{:,.2f}".format(total_liabilities) }} | 
+               <strong>{{ translations['Net Worth'] }}:</strong> ₦{{ "{:,.2f}".format(net_worth) }}</p>
         </div>
-        <div class="stat">
-            <strong>{{ translations['Total Liabilities'] }}:</strong> ₦{{ total_liabilities|round(2) }} ({{ translations['Outstanding Bills'] }}: ₦{{ outstanding_bills|round(2) }})
-        </div>
-        <div class="stat">
-            <strong>{{ translations['Net Worth'] }}:</strong> <span class="net-worth-{{ 'positive' if net_worth >= 0 else 'negative' }}">₦{{ net_worth|round(2) }}</span>
-        </div>
-        {% if badge %}
-            <div class="badge">{{ badge }}</div>
-        {% endif %}
-        <div class="chart">
-            <h3>{{ translations['Assets vs Liabilities'] }}</h3>
-            <canvas id="barChart"></canvas>
-        </div>
-        <div class="chart">
-            <h3>{{ translations['Assets'] }}</h3>
-            <canvas id="assetPieChart"></canvas>
-        </div>
-        <div class="chart">
-            <h3>{{ translations['Liabilities'] }}</h3>
-            <canvas id="liabilityPieChart"></canvas>
-        </div>
-        <div class="insights">
-            <h3>{{ translations['Insights'] }}</h3>
+        <h3>{{ translations['Assets'] }}</h3>
+        <ul>
+            <li>{{ translations['Cash and Bank Balances'] }}: ₦{{ "{:,.2f}".format(asset_data.cash) }}</li>
+            <li>{{ translations['Physical Assets'] }}: ₦{{ "{:,.2f}".format(asset_data.physical_assets) }}</li>
+            <li>{{ translations['Investments & Other Assets'] }}: ₦{{ "{:,.2f}".format(asset_data.investments) }}</li>
+        </ul>
+        <h3>{{ translations['Liabilities'] }}</h3>
+        <ul>
+            <li>{{ translations['Loans'] }}: ₦{{ "{:,.2f}".format(liability_data.loans) }}</li>
+            <li>{{ translations['Other Debts'] }}: ₦{{ "{:,.2f}".format(liability_data.other_debts) }}</li>
+            <li>{{ translations['Outstanding Bills'] }}: ₦{{ "{:,.2f}".format(liability_data.outstanding_bills) }}</li>
+        </ul>
+        {% if insights %}
+        <h3>{{ translations['Insights'] }}</h3>
+        <ul>
             {% for insight in insights %}
-                <p>{{ insight }}</p>
+            <li>{{ insight }}</li>
             {% endfor %}
+        </ul>
+        {% endif %}
+        {% if badge %}
+        <p><strong>{{ translations['Badge'] }}:</strong> {{ badge }}</p>
+        {% endif %}
+        <p class="tip">{{ translations['Even small savings or assets count. Knowing your net worth helps you grow.'] }}</p>
+        <div class="mt-3">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">{{ translations['Go to Dashboard'] }}</a>
         </div>
-        <form method="POST" action="{{ url_for('net_worth_share') }}" class="mb-3">
-            <div class="input-group">
-                <input type="email" name="email" class="form-control" placeholder="{{ translations['Enter your email'] }}" aria-label="{{ translations['Enter your email'] }}">
-                <button type="submit" class="btn btn-primary">{{ translations['Share Results'] }}</button>
-            </div>
-        </form>
-        <p>{{ translations['Your data is not stored or shared'] }} <a href="#">{{ translations['Privacy Policy'] }}</a></p>
-        <a href="{{ url_for('net_worth') }}" class="btn btn-primary">{{ translations['Recalculate'] }}</a>
-        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">{{ translations['Go to Dashboard'] }}</a>
     </div>
     <script src="/static/js/bootstrap.bundle.min.js"></script>
-    <script src="/static/js/interactivity.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
-    <script>
-        // Confetti animation for positive net worth
-        {% if net_worth >= 0 %}
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
-            setTimeout(() => confetti.reset(), 5000);
-        {% endif %}
-        // Bar Chart
-        const barCtx = document.getElementById('barChart').getContext('2d');
-        new Chart(barCtx, {
-            type: 'bar',
-            data: {
-                labels: ['{{ translations['Assets'] }}', '{{ translations['Liabilities'] }}'],
-                datasets: [{
-                    label: '{{ translations['Amount'] }} (₦)',
-                    data: [{{ total_assets }}, {{ total_liabilities }}],
-                    backgroundColor: ['#1E7F71', '#dc3545']
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: { y: { beginAtZero: true } },
-                plugins: { legend: { display: false } }
-            }
-        });
-        // Asset Pie Chart
-        const assetCtx = document.getElementById('assetPieChart').getContext('2d');
-        new Chart(assetCtx, {
-            type: 'pie',
-            data: {
-                labels: [
-                    '{{ translations['Cash and Bank Balances'] }}',
-                    '{{ translations['Investments'] }}',
-                    '{{ translations['Real Estate'] }}',
-                    '{{ translations['Vehicles'] }}',
-                    '{{ translations['Business Ownership'] }}',
-                    '{{ translations['Other Assets'] }}'
-                ],
-                datasets: [{
-                    data: [
-                        {{ asset_data.cash }},
-                        {{ asset_data.investments }},
-                        {{ asset_data.real_estate }},
-                        {{ asset_data.vehicles }},
-                        {{ asset_data.business }},
-                        {{ asset_data.other_assets }}
-                    ],
-                    backgroundColor: ['#1E7F71', '#2E7D32', '#0288D1', '#6c757d', '#dc3545', '#ffc107']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ₦${ctx.raw}` } }
-                }
-            }
-        });
-        // Liability Pie Chart
-        const liabilityCtx = document.getElementById('liabilityPieChart').getContext('2d');
-        new Chart(liabilityCtx, {
-            type: 'pie',
-            data: {
-                labels: [
-                    '{{ translations['Credit Card Debt'] }}',
-                    '{{ translations['Loans'] }}',
-                    '{{ translations['Outstanding Bills'] }}',
-                    '{{ translations['Other Debts'] }}'
-                ],
-                datasets: [{
-                    data: [
-                        {{ liability_data.credit_card }},
-                        {{ liability_data.loans }},
-                        {{ liability_data.outstanding_bills }},
-                        {{ liability_data.other_debts }}
-                    ],
-                    backgroundColor: ['#dc3545', '#ffc107', '#6c757d', '#0288D1']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom' },
-                    tooltip: { callbacks: { label: ctx => `${ctx.label}: ₦${ctx.raw}` } }
-                }
-            }
-        });
-    </script>
 </body>
 </html>
