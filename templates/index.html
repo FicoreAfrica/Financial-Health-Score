@@ -466,162 +466,162 @@
             <div class="nav-controls">
                 <form action="{{ url_for('change_language') }}" method="GET">
                     <input type="hidden" name="next" value="{{ request.path }}">
-                    <label for="language-select" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
-                    <select id="language-select" name="language" onchange="this.form.submit()" aria-label="{{ trans.get('Choose your language', 'Choose your language') }}">
+                    <label for="language-select" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
+                    <select id="language-select" name="language" onchange="this.form.submit()" aria-label="{{ translations.get('Choose your language', 'Choose your language') }}">
                         <option value="en" {% if language == 'en' %}selected{% endif %}>English</option>
                         <option value="ha" {% if language == 'ha' %}selected{% endif %}>Hausa</option>
                     </select>
                 </form>
-                <button class="refresh-button" onclick="window.location.reload()" title="{{ trans.get('Refresh', 'Refresh') }}">
-                    <i class="fas fa-sync-alt"></i> {{ trans.get('Refresh', 'Refresh') }}
+                <button class="refresh-button" onclick="window.location.reload()" title="{{ translations.get('Refresh', 'Refresh') }}">
+                    <i class="fas fa-sync-alt"></i> {{ translations.get('Refresh', 'Refresh') }}
                 </button>
             </div>
         </div>
     </nav>
     <section class="hero">
-        <h2>{{ trans.get('Your All-in-One Toolkit for Personal & SME Financial Health Across Africa', 'Your All-in-One Toolkit for Personal & SME Financial Health Across Africa') }}</h2>
-        <p>{{ trans.get('Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.', 'Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.') }}</p>
+        <h2>{{ translations.get('Your All-in-One Toolkit for Personal & SME Financial Health Across Africa', 'Your All-in-One Toolkit for Personal & SME Financial Health Across Africa') }}</h2>
+        <p>{{ translations.get('Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.', 'Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.') }}</p>
         <form action="{{ url_for('start_tool') }}" method="POST">
             <input type="hidden" name="tool" value="bill_planner">
             {{ form.csrf_token }}
-            <label for="first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
-            <input type="text" id="first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
-            <label for="email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
-            <input type="email" id="email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
-            <label for="language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+            <label for="first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
+            <input type="text" id="first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
+            <label for="email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
+            <input type="email" id="email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
+            <label for="language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
             <select id="language" name="language" required>
-                <option value="en">{{ trans.get('English', 'English') }}</option>
-                <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                <option value="en">{{ translations.get('English', 'English') }}</option>
+                <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
             </select>
-            <button type="submit" class="cta-button">{{ trans.get('Get Started', 'Get Started') }}</button>
+            <button type="submit" class="cta-button">{{ translations.get('Get Started', 'Get Started') }}</button>
         </form>
     </section>
     <section class="tools-section">
-        <h2>{{ trans.get('Choose a Tool', 'Choose a Tool') }}</h2>
+        <h2>{{ translations.get('Choose a Tool', 'Choose a Tool') }}</h2>
         <div class="tools-grid">
             <div class="tool-card">
-                <h3>{{ trans.get('Bill Planner', 'Bill Planner') }}</h3>
-                <p>{{ trans.get('Manage and mark bills as paid', 'Manage and mark bills as paid') }}</p>
+                <h3>{{ translations.get('Bill Planner', 'Bill Planner') }}</h3>
+                <p>{{ translations.get('Manage and mark bills as paid', 'Manage and mark bills as paid') }}</p>
                 <form action="{{ url_for('start_tool') }}" method="POST">
                     <input type="hidden" name="tool" value="bill_planner">
                     {{ form.csrf_token }}
-                    <label for="bill_first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
-                    <input type="text" id="bill_first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
-                    <label for="bill_email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
-                    <input type="email" id="bill_email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
-                    <label for="bill_language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+                    <label for="bill_first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
+                    <input type="text" id="bill_first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
+                    <label for="bill_email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
+                    <input type="email" id="bill_email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
+                    <label for="bill_language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
                     <select id="bill_language" name="language" required>
-                        <option value="en">{{ trans.get('English', 'English') }}</option>
-                        <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                        <option value="en">{{ translations.get('English', 'English') }}</option>
+                        <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
                     </select>
-                    <button type="submit" class="btn" aria-label="{{ trans.get('Start Bill Planner', 'Start Bill Planner') }}">{{ trans.get('Start', 'Start') }}</button>
+                    <button type="submit" class="btn" aria-label="{{ translations.get('Start Bill Planner', 'Start Bill Planner') }}">{{ translations.get('Start', 'Start') }}</button>
                 </form>
             </div>
             <div class="tool-card">
-                <h3>{{ trans.get('Net Worth Calculator', 'Net Worth Calculator') }}</h3>
-                <p>{{ trans.get('Net worth is assets minus liabilities', 'Net worth is assets minus liabilities') }}</p>
+                <h3>{{ translations.get('Net Worth Calculator', 'Net Worth Calculator') }}</h3>
+                <p>{{ translations.get('Net worth is assets minus liabilities', 'Net worth is assets minus liabilities') }}</p>
                 <form action="{{ url_for('start_tool') }}" method="POST">
                     <input type="hidden" name="tool" value="net_worth">
                     {{ form.csrf_token }}
-                    <label for="networth_first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
-                    <input type="text" id="networth_first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
-                    <label for="networth_email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
-                    <input type="email" id="networth_email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
-                    <label for="networth_language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+                    <label for="networth_first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
+                    <input type="text" id="networth_first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
+                    <label for="networth_email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
+                    <input type="email" id="networth_email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
+                    <label for="networth_language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
                     <select id="networth_language" name="language" required>
-                        <option value="en">{{ trans.get('English', 'English') }}</option>
-                        <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                        <option value="en">{{ translations.get('English', 'English') }}</option>
+                        <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
                     </select>
-                    <button type="submit" class="btn" aria-label="{{ trans.get('Start Net Worth Calculator', 'Start Net Worth Calculator') }}">{{ trans.get('Start', 'Start') }}</button>
+                    <button type="submit" class="btn" aria-label="{{ translations.get('Start Net Worth Calculator', 'Start Net Worth Calculator') }}">{{ translations.get('Start', 'Start') }}</button>
                 </form>
             </div>
             <div class="tool-card">
-                <h3>{{ trans.get('Emergency Fund Calculator', 'Emergency Fund Calculator') }}</h3>
-                <p>{{ trans.get('Aims to cover 3-6 months of expenses for financial security', 'Aims to cover 3-6 months of expenses for financial security') }}</p>
+                <h3>{{ translations.get('Emergency Fund Calculator', 'Emergency Fund Calculator') }}</h3>
+                <p>{{ translations.get('Aims to cover 3-6 months of expenses for financial security', 'Aims to cover 3-6 months of expenses for financial security') }}</p>
                 <form action="{{ url_for('start_tool') }}" method="POST">
                     <input type="hidden" name="tool" value="emergency_fund">
                     {{ form.csrf_token }}
-                    <label for="fund_first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
-                    <input type="text" id="fund_first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
-                    <label for="fund_email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
-                    <input type="email" id="fund_email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
-                    <label for="fund_language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+                    <label for="fund_first_name" class="visually-hidden">{{ translations.get('Enter your first name', 'Enter your first name') }}</label>
+                    <input type="text" id="fund_first_name" name="first_name" placeholder="{{ translations.get('Enter your first name', 'Enter your first name') }}" required>
+                    <label for="fund_email" class="visually-hidden">{{ translations.get('Enter your email', 'Enter your email') }}</label>
+                    <input type="email" id="fund_email" name="email" placeholder="{{ translations.get('Enter your email', 'Enter your email') }}">
+                    <label for="fund_language" class="visually-hidden">{{ translations.get('Choose your language', 'Choose your language') }}</label>
                     <select id="fund_language" name="language" required>
-                        <option value="en">{{ trans.get('English', 'English') }}</option>
-                        <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                        <option value="en">{{ translations.get('English', 'English') }}</option>
+                        <option value="ha">{{ translations.get('Hausa', 'Hausa') }}</option>
                     </select>
-                    <button type="submit" class="btn" aria-label="{{ trans.get('Start Emergency Fund Calculator', 'Start Emergency Fund Calculator') }}">{{ trans.get('Start', 'Start') }}</button>
+                    <button type="submit" class="btn" aria-label="{{ translations.get('Start Emergency Fund Calculator', 'Start Emergency Fund Calculator') }}">{{ translations.get('Start', 'Start') }}</button>
                 </form>
             </div>
             <div class="tool-card">
-                <h3>{{ trans.get('Financial Health Score', 'Financial Health Score') }}</h3>
-                <p>{{ trans.get('Evaluates income, expenses, and debt for a health score', 'Evaluates income, expenses, and debt for a health score') }}</p>
-                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ trans.get('Coming Soon', 'Coming Soon') }}">{{ trans.get('Coming Soon', 'Coming Soon') }}</a>
+                <h3>{{ translations.get('Financial Health Score', 'Financial Health Score') }}</h3>
+                <p>{{ translations.get('Evaluates income, expenses, and debt for a health score', 'Evaluates income, expenses, and debt for a health score') }}</p>
+                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ translations.get('Coming Soon', 'Coming Soon') }}">{{ translations.get('Coming Soon', 'Coming Soon') }}</a>
             </div>
             <div class="tool-card">
-                <h3>{{ trans.get('Budget Planner', 'Budget Planner') }}</h3>
-                <p>{{ trans.get('Allocate income across expense categories', 'Allocate income across expense categories') }}</p>
-                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ trans.get('Coming Soon', 'Coming Soon') }}">{{ trans.get('Coming Soon', 'Coming Soon') }}</a>
+                <h3>{{ translations.get('Budget Planner', 'Budget Planner') }}</h3>
+                <p>{{ translations.get('Allocate income across expense categories', 'Allocate income across expense categories') }}</p>
+                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ translations.get('Coming Soon', 'Coming Soon') }}">{{ translations.get('Coming Soon', 'Coming Soon') }}</a>
             </div>
             <div class="tool-card">
-                <h3>{{ trans.get('Personality Quiz', 'Personality Quiz') }}</h3>
-                <p>{{ trans.get('Answer questions to assess financial literacy', 'Answer questions to assess financial literacy') }}</p>
-                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ trans.get('Coming Soon', 'Coming Soon') }}">{{ trans.get('Coming Soon', 'Coming Soon') }}</a>
+                <h3>{{ translations.get('Personality Quiz', 'Personality Quiz') }}</h3>
+                <p>{{ translations.get('Answer questions to assess financial literacy', 'Answer questions to assess financial literacy') }}</p>
+                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ translations.get('Coming Soon', 'Coming Soon') }}">{{ translations.get('Coming Soon', 'Coming Soon') }}</a>
             </div>
             <div class="tool-card">
-                <h3>{{ trans.get('Mini SME Accounting Tool', 'Mini SME Accounting Tool') }}</h3>
-                <p>{{ trans.get('Built for micro and small businesses to track income, costs, profit, and growth', 'Built for micro and small businesses to track income, costs, profit, and growth') }}</p>
-                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ trans.get('Coming Soon', 'Coming Soon') }}">{{ trans.get('Coming Soon', 'Coming Soon') }}</a>
+                <h3>{{ translations.get('Mini SME Accounting Tool', 'Mini SME Accounting Tool') }}</h3>
+                <p>{{ translations.get('Built for micro and small businesses to track income, costs, profit, and growth', 'Built for micro and small businesses to track income, costs, profit, and growth') }}</p>
+                <a href="{{ WAITLIST_FORM_URL }}" class="notify-me" aria-label="{{ translations.get('Coming Soon', 'Coming Soon') }}">{{ translations.get('Coming Soon', 'Coming Soon') }}</a>
             </div>
         </div>
         <div class="testimonials-section">
-            <strong><i class="fas fa-quote-left"></i> {{ trans.get('What people are saying about Us', 'What people are saying about Us') }}</strong>
+            <strong><i class="fas fa-quote-left"></i> {{ translations.get('What people are saying about Us', 'What people are saying about Us') }}</strong>
             <div class="testimonial">
-                <span class="quote">“</span><span class="initials">MU</span> {{ trans.get('Testimonial 1', 'I explored the features earlier today and was impressed... I thought it was only for SMEs, but even individuals can benefit. The learning section is on another level. — <span class="name">Maisarata Uqubatu</span>') | safe }}
+                <span class="quote">“</span><span class="initials">MU</span> {{ translations.get('Testimonial 1', 'I explored the features earlier today and was impressed... I thought it was only for SMEs, but even individuals can benefit. The learning section is on another level. — <span class="name">Maisarata Uqubatu</span>') | safe }}
             </div>
             <div class="testimonial">
-                <span class="quote">“</span><span class="initials">AA</span> {{ trans.get('Testimonial 2', '🔥 Ficore 🔥🔥🔥🔥🔥 — <span class="name">Abubakar Abdulkadir</span>, Software Engineer for Sustainable Solutions') | safe }}
+                <span class="quote">“</span><span class="initials">AA</span> {{ translations.get('Testimonial 2', '🔥 Ficore 🔥🔥🔥🔥🔥 — <span class="name">Abubakar Abdulkadir</span>, Software Engineer for Sustainable Solutions') | safe }}
             </div>
             <div class="testimonial">
-                <span class="quote">“</span><span class="initials">ASU</span> {{ trans.get('Testimonial 3', 'I’ve been following the Ficore project and I’m impressed. It’s clear there\'s potential, and I’m curious to know more—especially if there\'s a customer support channel included. I\'d love to contribute if needed! — <span class="name">Aminu Sani Usman</span>') | safe }}
+                <span class="quote">“</span><span class="initials">ASU</span> {{ translations.get('Testimonial 3', 'I’ve been following the Ficore project and I’m impressed. It’s clear there\'s potential, and I’m curious to know more—especially if there\'s a customer support channel included. I\'d love to contribute if needed! — <span class="name">Aminu Sani Usman</span>') | safe }}
             </div>
         </div>
         <div class="recommended-learning">
-            <strong><i class="fas fa-book"></i> {{ trans.get('Recommended Learning', 'Recommended Learning') }}</strong>
-            <p>{{ trans.get('Learn more about budgeting!', 'Learn more about budgeting!') }}</p>
+            <strong><i class="fas fa-book"></i> {{ translations.get('Recommended Learning', 'Recommended Learning') }}</strong>
+            <p>{{ translations.get('Learn more about budgeting!', 'Learn more about budgeting!') }}</p>
         </div>
     </section>
     <section class="why-section">
-        <h2>{{ trans.get('Why Ficore Africa?', 'Why Ficore Africa?') }}</h2>
+        <h2>{{ translations.get('Why Ficore Africa?', 'Why Ficore Africa?') }}</h2>
         <ul class="why-list">
-            <li><i class="fas fa-check-circle"></i>{{ trans.get('Localized for Africa with support for Naira and regional financial contexts', 'Localized for Africa with support for Naira and regional financial contexts') }}</li>
-            <li><i class="fas fa-check-circle"></i>{{ trans.get('Empowers financial literacy with easy-to-use tools', 'Empowers financial literacy with easy-to-use tools') }}</li>
-            <li><i class="fas fa-check-circle"></i>{{ trans.get('Provides actionable insights for better financial decisions', 'Provides actionable insights for better financial decisions') }}</li>
+            <li><i class="fas fa-check-circle"></i>{{ translations.get('Localized for Africa with support for Naira and regional financial contexts', 'Localized for Africa with support for Naira and regional financial contexts') }}</li>
+            <li><i class="fas fa-check-circle"></i>{{ translations.get('Empowers financial literacy with easy-to-use tools', 'Empowers financial literacy with easy-to-use tools') }}</li>
+            <li><i class="fas fa-check-circle"></i>{{ translations.get('Provides actionable insights for better financial decisions', 'Provides actionable insights for better financial decisions') }}</li>
         </ul>
     </section>
     <section class="about-section">
-        <p>{{ trans.get('About Ficore Africa: Empowering financial growth across Africa since 2025', 'About Ficore Africa: Empowering financial growth across Africa since 2025') }}</p>
+        <p>{{ translations.get('About Ficore Africa: Empowering financial growth across Africa since 2025', 'About Ficore Africa: Empowering financial growth across Africa since 2025') }}</p>
     </section>
     <footer class="footer">
-        <p>{{ trans.get('Contact Us', 'Contact Us') }}: <a href="mailto:ficoreafrica@gmail.com">{{ trans.get('Click to Email', 'Click to Email') }}</a> ficoreafrica@gmail.com {{ trans.get('for support', 'for support') }}</p>
+        <p>{{ translations.get('Contact Us', 'Contact Us') }}: <a href="mailto:ficoreafrica@gmail.com">{{ translations.get('Click to Email', 'Click to Email') }}</a> ficoreafrica@gmail.com {{ translations.get('for support', 'for support') }}</p>
         <div class="social-icons">
-            <a href="{{ LINKEDIN_URL }}" target="_blank" aria-label="{{ trans.get('Connect on LinkedIn', 'Connect on LinkedIn') }}"><i class="fab fa-linkedin"></i></a>
-            <a href="{{ TWITTER_URL }}" target="_blank" aria-label="{{ trans.get('Follow on Twitter', 'Follow on Twitter') }}"><i class="fab fa-x-twitter"></i></a>
-            <a href="{{ FACEBOOK_URL }}" target="_blank" aria-label="{{ trans.get('Follow on Facebook', 'Follow on Facebook') }}"><i class="fab fa-facebook"></i></a>
+            <a href="{{ LINKEDIN_URL }}" target="_blank" aria-label="{{ translations.get('Connect on LinkedIn', 'Connect on LinkedIn') }}"><i class="fab fa-linkedin"></i></a>
+            <a href="{{ TWITTER_URL }}" target="_blank" aria-label="{{ translations.get('Follow on Twitter', 'Follow on Twitter') }}"><i class="fab fa-x-twitter"></i></a>
+            <a href="{{ FACEBOOK_URL }}" target="_blank" aria-label="{{ translations.get('Follow on Facebook', 'Follow on Facebook') }}"><i class="fab fa-facebook"></i></a>
         </div>
         <div class="footer-buttons">
-            <a href="mailto:ficoreafrica@gmail.com"><i class="fas fa-envelope"></i> {{ trans.get('Click to Email', 'Click to Email') }}</a>
-            <a href="{{ FEEDBACK_FORM_URL }}" target="_blank"><i class="fas fa-comment"></i> {{ trans.get('Provide Feedback', 'Provide Feedback') }}</a>
-            <a href="{{ WAITLIST_FORM_URL }}" target="_blank"><i class="fas fa-users"></i> {{ trans.get('Join Waitlist', 'Join Waitlist') }}</a>
-            <a href="{{ CONSULTANCY_FORM_URL }}" target="_blank"><i class="fas fa-briefcase"></i> {{ trans.get('Book Consultancy', 'Book Consultancy') }}</a>
-            <a href="{{ url_for('logout') }}">{{ trans.get('Logout', 'Logout') }}</a>
+            <a href="mailto:ficoreafrica@gmail.com"><i class="fas fa-envelope"></i> {{ translations.get('Click to Email', 'Click to Email') }}</a>
+            <a href="{{ FEEDBACK_FORM_URL }}" target="_blank"><i class="fas fa-comment"></i> {{ translations.get('Provide Feedback', 'Provide Feedback') }}</a>
+            <a href="{{ WAITLIST_FORM_URL }}" target="_blank"><i class="fas fa-users"></i> {{ translations.get('Join Waitlist', 'Join Waitlist') }}</a>
+            <a href="{{ CONSULTANCY_FORM_URL }}" target="_blank"><i class="fas fa-briefcase"></i> {{ translations.get('Book Consultancy', 'Book Consultancy') }}</a>
+            <a href="{{ url_for('logout') }}">{{ translations.get('Logout', 'Logout') }}</a>
         </div>
     </footer>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const tips = [
-                "{{ trans.get('Quick Tips', 'Quick Tips') }}: {{ trans.get('Spend less on non-essentials to balance your budget', 'Spend less on non-essentials to balance your budget') }}",
-                "{{ trans.get('Recommended Platform', 'Recommended Platform') }}: {{ trans.get('Ficore Learning Hub', 'Learn more at Ficore Learning Hub!') }}"
+                "{{ translations.get('Quick Tips', 'Quick Tips') }}: {{ translations.get('Spend less on non-essentials to balance your budget', 'Spend less on non-essentials to balance your budget') }}",
+                "{{ translations.get('Recommended Platform', 'Recommended Platform') }}: {{ translations.get('Ficore Learning Hub', 'Learn more at Ficore Learning Hub!') }}"
             ];
             const randomTip = tips[Math.floor(Math.random() * tips.length)];
             const tipElement = document.createElement('p');
