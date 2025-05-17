@@ -1,19 +1,20 @@
-from flask import Flask, render_template, request, flash, redirect, url_for, session
-from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField
-from wtforms.validators import DataRequired, Email, NumberRange, Optional
-from flask_session import Session
-import json
 import os
+import json
 import logging
 from datetime import datetime, timedelta
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import uuid
+from flask import Flask, render_template, request, flash, redirect, url_for, session
+from flask_wtf import FlaskForm
+from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField
+from wtforms.validators import DataRequired, Email, NumberRange, Optional
+from flask_session import Session
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.date import DateTrigger
-import uuid
+from translations import translations
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -40,248 +41,6 @@ SPENDING_LIMITS = {
     'rent': 50000,
     'subscription': 10000,
     'other': 15000
-}
-
-# Translations (English and Hausa only)
-translations = {
-    'en': {
-        'Bill Planner': 'Bill Planner',
-        'Financial growth passport for Africa': 'Financial growth passport for Africa',
-        'Enter your first name': 'Enter your first name',
-        'Enter your email': 'Enter your email',
-        'Choose your language': 'Choose your language',
-        'English': 'English',
-        'Hausa': 'Hausa',
-        'Next': 'Next',
-        'View and Edit Bills': 'View and Edit Bills',
-        'Select Category': 'Select Category',
-        'All': 'All',
-        'Utilities': 'Utilities',
-        'Rent': 'Rent',
-        'Subscription': 'Subscription',
-        'Other': 'Other',
-        'Description': 'Description',
-        'Amount': 'Amount',
-        'Due Date': 'Due Date',
-        'Status': 'Status',
-        'Paid': 'Paid',
-        'Unpaid': 'Unpaid',
-        'Add New Bill': 'Add New Bill',
-        'What is this bill for?': 'What is this bill for?',
-        'How much is the bill? (₦)': 'How much is the bill? (₦)',
-        'When is this bill due?': 'When is this bill due?',
-        'Category': 'Category',
-        'How often does this bill occur?': 'How often does this bill occur?',
-        'One-time': 'One-time',
-        'Weekly': 'Weekly',
-        'Monthly': 'Monthly',
-        'Quarterly': 'Quarterly',
-        'Send me reminders': 'Send me reminders',
-        '3 days before': '3 days before',
-        '1 day before': '1 day before',
-        'On due date': 'On due date',
-        'Save Bill': 'Save Bill',
-        'Edit': 'Edit',
-        'Delete': 'Delete',
-        'Confirm Delete': 'Are you sure you want to delete this bill?',
-        'Bill Deleted': 'Bill deleted successfully',
-        'Back': 'Back',
-        'Go to Dashboard': 'Go to Dashboard',
-        'Dashboard': 'Dashboard',
-        'Paid Bills': 'Paid Bills',
-        'Unpaid Bills': 'Unpaid Bills',
-        'Total Bills': 'Total Bills',
-        'Total Paid': 'Total Paid',
-        'Total Unpaid': 'Total Unpaid',
-        'Overdue Bills': 'Overdue Bills',
-        'Upcoming Bills': 'Upcoming Bills',
-        'Spending by Category': 'Spending by Category',
-        'Bills Due': 'Bills Due',
-        'Today': 'Today',
-        'This Week': 'This Week',
-        'This Month': 'This Month',
-        'Tips for Managing Bills': 'Tips for Managing Bills',
-        'Pay bills early to avoid late fees. Use mobile money for quick payments.': 'Pay bills early to avoid late fees. Use mobile money for quick payments.',
-        'Switch to energy-efficient utilities to save money.': 'Switch to energy-efficient utilities to save money.',
-        'Plan monthly bills to manage your budget better.': 'Plan monthly bills to manage your budget better.',
-        'Dear': 'Dear',
-        'Bill Reminder': 'Bill Reminder',
-        'Your bill is due soon': 'Your bill is due soon',
-        'Due': 'Due',
-        'Pay now to avoid late fees': 'Pay now to avoid late fees',
-        'Manage your bills': 'Manage your bills',
-        'Thank you for using Ficore Africa': 'Thank you for using Ficore Africa',
-        'Due date must be today or in the future': 'Due date must be today or in the future',
-        'Spending Limit Exceeded': 'You’ve exceeded ₦{limit} on {category} this month',
-        'Net Worth Calculator': 'Net Worth Calculator',
-        'Know Your Net Worth': 'Know Your Net Worth',
-        'Personal Information': 'Personal Information',
-        'Assets': 'Assets',
-        'Cash and Bank Balances': 'Cash and Bank Balances',
-        'Investments': 'Investments',
-        'Real Estate': 'Real Estate',
-        'Vehicles': 'Vehicles',
-        'Business Ownership': 'Business Ownership',
-        'Other Assets': 'Other Assets',
-        'Liabilities': 'Liabilities',
-        'Credit Card Debt': 'Credit Card Debt',
-        'Loans': 'Loans',
-        'Outstanding Bills': 'Outstanding Bills',
-        'Other Debts': 'Other Debts',
-        'Calculate Net Worth': 'Calculate Net Worth',
-        'Total Assets': 'Total Assets',
-        'Total Liabilities': 'Total Liabilities',
-        'Net Worth': 'Net Worth',
-        'Positive Net Worth': 'Great! Let’s grow it.',
-        'Negative Net Worth': 'Focus on reducing high-interest debt.',
-        'Asset Concentration Warning': 'Over-reliance on {asset_type}. Consider diversifying.',
-        'High Debt Ratio': 'Debt exceeds 60% of assets. Reduce debt for stability.',
-        'Share Results': 'Share Results',
-        'Net Worth Milestone': 'Net Worth Milestone! Positive net worth achieved!',
-        'Emergency Fund Calculator': 'Emergency Fund Calculator',
-        'Plan Emergency Fund': 'Plan Emergency Fund',
-        'Financial Details': 'Financial Details',
-        'Monthly Expenses': 'Monthly Expenses',
-        'Monthly Income': 'Monthly Income',
-        'Current Savings': 'Current Savings',
-        'Risk Level': 'Risk Level',
-        'Low': 'Low',
-        'Medium': 'Medium',
-        'High': 'High',
-        'Number of Dependents': 'Number of Dependents',
-        'Savings Timeline': 'Savings Timeline',
-        '6 Months': '6 Months',
-        '12 Months': '12 Months',
-        '18 Months': '18 Months',
-        'Auto Email Results': 'Send results to my email',
-        'Calculate Fund': 'Calculate Fund',
-        'Target Fund Size': 'Target Fund Size',
-        'Savings Gap': 'Savings Gap',
-        'Monthly Savings Goal': 'Monthly Savings Goal',
-        'Timeline': 'Timeline',
-        'Fund Builder': 'Fund Builder! Emergency fund plan created!',
-        'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.': 'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.',
-        'Error sending email': 'Error sending email'
-    },
-    'ha': {
-        'Bill Planner': 'Mai Tsara Kuɗi',
-        'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don Afirka',
-        'Enter your first name': 'Shigar da sunanka na farko',
-        'Enter your email': 'Shigar da imel ɗinka',
-        'Choose your language': 'Zaɓi yarenka',
-        'English': 'Turanci',
-        'Hausa': 'Hausa',
-        'Next': 'Na gaba',
-        'View and Edit Bills': 'Duba da Gyara Kuɗi',
-        'Select Category': 'Zaɓi Rukuni',
-        'All': 'Duk',
-        'Utilities': 'Kayan aiki',
-        'Rent': 'Haya',
-        'Subscription': 'Biyan kuɗi',
-        'Other': 'Sauran',
-        'Description': 'Bayanin',
-        'Amount': 'Adadin',
-        'Due Date': 'Ranar Karewa',
-        'Status': 'Matsayi',
-        'Paid': 'An Biya',
-        'Unpaid': 'Ba a Biya ba',
-        'Add New Bill': 'Ƙara Sabon Kuɗi',
-        'What is this bill for?': 'Wannan kuɗin na me ne?',
-        'How much is the bill? (₦)': 'Nawa ne kuɗin? (₦)',
-        'When is this bill due?': 'Yaushe ne wannan kuɗin zai kare?',
-        'Category': 'Rukuni',
-        'How often does this bill occur?': 'Sau nawa wannan kuɗin yake faruwa?',
-        'One-time': 'Lokaci ɗaya',
-        'Weekly': 'Mako-mako',
-        'Monthly': 'Kowane wata',
-        'Quarterly': 'Kowane kwata',
-        'Send me reminders': 'Aiko mini da tunatarwa',
-        '3 days before': 'Kwanaki 3 kafin',
-        '1 day before': 'Rana 1 kafin',
-        'On due date': 'A ranar karewa',
-        'Save Bill': 'Ajiye Kuɗi',
-        'Edit': 'Gyara',
-        'Delete': 'Goge',
-        'Confirm Delete': 'Shin ka tabbata kana so ka goge wannan kuɗin?',
-        'Bill Deleted': 'An goge kuɗin cikin nasara',
-        'Back': 'Koma baya',
-        'Go to Dashboard': 'Je zuwa Dashboard',
-        'Dashboard': 'Dashboard',
-        'Paid Bills': 'Kuɗin da aka biya',
-        'Unpaid Bills': 'Kuɗin da ba a biya ba',
-        'Total Bills': 'Jimlar Kuɗi',
-        'Total Paid': 'Jimlar da aka biya',
-        'Total Unpaid': 'Jimlar da ba a biya ba',
-        'Overdue Bills': 'Kuɗin da suka wuce kwanan wata',
-        'Upcoming Bills': 'Kuɗin da ke zuwa',
-        'Spending by Category': 'Kashewa ta Rukuni',
-        'Bills Due': 'Kuɗin da za a biya',
-        'Today': 'Yau',
-        'This Week': 'Wannan Mako',
-        'This Month': 'Wannan Wata',
-        'Tips for Managing Bills': 'Shawara don Sarrafa Kuɗi',
-        'Pay bills early to avoid late fees. Use mobile money for quick payments.': 'Biya kuɗi da wuri don guje wa jaruman jinkiri. Yi amfani da kuɗin wayar hannu don biya cikin sauri.',
-        'Switch to energy-efficient utilities to save money.': 'Canja zuwa kayan aiki masu amfani da makamashi don ajiyar kuɗi.',
-        'Plan monthly bills to manage your budget better.': 'Tsara kuɗin kowane wata don sarrafa kasafin kuɗin ka mafi kyau.',
-        'Dear': 'Masoyi',
-        'Bill Reminder': 'Tunatarwar Kuɗi',
-        'Your bill is due soon': 'Kuɗin ka yana kusa da karewa',
-        'Due': 'Karewa',
-        'Pay now to avoid late fees': 'Biya yanzu don guje wa jaruman jinkiri',
-        'Manage your bills': 'Sarrafa kuɗin ka',
-        'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka',
-        'Due date must be today or in the future': 'Ranar karewa dole ne ta kasance yau ko a nan gaba',
-        'Spending Limit Exceeded': 'Ka wuce ₦{limit} akan {category} a wannan wata',
-        'Net Worth Calculator': 'Kalkuleta na Darajar Kuɗi',
-        'Know Your Net Worth': 'San Darajar Kuɗinka',
-        'Personal Information': 'Bayanan Kai',
-        'Assets': 'Kaddarori',
-        'Cash and Bank Balances': 'Kuɗi da Ma’ajiyar Banki',
-        'Investments': 'Jari',
-        'Real Estate': 'Ƙasa da Gidaje',
-        'Vehicles': 'Motoci',
-        'Business Ownership': 'Mallakar Kasuwanci',
-        'Other Assets': 'Sauran Kaddarori',
-        'Liabilities': 'Bashi',
-        'Credit Card Debt': 'Bashin Katin Kiredit',
-        'Loans': 'Rancen Kuɗi',
-        'Outstanding Bills': 'Kuɗin da ba a biya ba',
-        'Other Debts': 'Sauran Basussuka',
-        'Calculate Net Worth': 'Ƙididdige Darajar Kuɗi',
-        'Total Assets': 'Jimlar Kaddarori',
-        'Total Liabilities': 'Jimlar Bashi',
-        'Net Worth': 'Darajar Kuɗi',
-        'Positive Net Worth': 'Yabanya! Bari mu ƙara girma.',
-        'Negative Net Worth': 'Mayar da hankali kan rage bashi mai yawan riba.',
-        'Asset Concentration Warning': 'Dogaro da yawa akan {asset_type}. Yi la’akari da rarrabawa.',
-        'High Debt Ratio': 'Bashi ya wuce 60% na kaddarori. Rage bashi don kwanciyar hankali.',
-        'Share Results': 'Raba Sakamakon',
-        'Net Worth Milestone': 'Alamar Darajar Kuɗi! An samu darajar kuɗi mai kyau!',
-        'Emergency Fund Calculator': 'Kalkuleta na Asusun Gaggawa',
-        'Plan Emergency Fund': 'Shirya Asusun Gaggawa',
-        'Financial Details': 'Bayanan Kuɗi',
-        'Monthly Expenses': 'Kashewar Wata-wata',
-        'Monthly Income': 'Kudaden shiga na Wata-wata',
-        'Current Savings': 'Ajiyar Yanzu',
-        'Risk Level': 'Matsayin Haɗari',
-        'Low': 'Ƙarami',
-        'Medium': 'Matsakaici',
-        'High': 'Mai Yawa',
-        'Number of Dependents': 'Yawan Masu Dogaro',
-        'Savings Timeline': 'Jadawalin Ajiya',
-        '6 Months': 'Watanni 6',
-        '12 Months': 'Watanni 12',
-        '18 Months': 'Watanni 18',
-        'Auto Email Results': 'Aika sakamakon zuwa imel dina',
-        'Calculate Fund': 'Ƙididdige Asusun',
-        'Target Fund Size': 'Girman Asusun da ake Nema',
-        'Savings Gap': 'Gibin Ajiya',
-        'Monthly Savings Goal': 'Manzon Ajiyar Wata-wata',
-        'Timeline': 'Jadawali',
-        'Fund Builder': 'Mai Gina Asusun! An ƙirƙiri shirin asusun gaggawa!',
-        'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.': 'Bisa kuɗin ka, ajiye ₦{amount}/wata don isa burin asusun gaggawa a cikin watanni {months}.',
-        'Error sending email': 'Kuskure wajen aikawa da imel'
-    }
 }
 
 # Forms
@@ -317,18 +76,15 @@ class BillForm(FlaskForm):
     submit = SubmitField('Save Bill')
 
 class NetWorthForm(FlaskForm):
-    # Step 1: Personal Information
     first_name = StringField('First Name', validators=[DataRequired()])
     email = StringField('Email', validators=[Optional(), Email()])
     language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
-    # Step 2: Assets
     cash = FloatField('Cash and Bank Balances', validators=[Optional(), NumberRange(min=0)], default=0)
     investments = FloatField('Investments', validators=[Optional(), NumberRange(min=0)], default=0)
     real_estate = FloatField('Real Estate', validators=[Optional(), NumberRange(min=0)], default=0)
     vehicles = FloatField('Vehicles', validators=[Optional(), NumberRange(min=0)], default=0)
     business = FloatField('Business Ownership', validators=[Optional(), NumberRange(min=0)], default=0)
     other_assets = FloatField('Other Assets', validators=[Optional(), NumberRange(min=0)], default=0)
-    # Step 3: Liabilities
     credit_card = FloatField('Credit Card Debt', validators=[Optional(), NumberRange(min=0)], default=0)
     loans = FloatField('Loans', validators=[Optional(), NumberRange(min=0)], default=0)
     other_debts = FloatField('Other Debts', validators=[Optional(), NumberRange(min=0)], default=0)
@@ -336,17 +92,14 @@ class NetWorthForm(FlaskForm):
     submit = SubmitField('Calculate Net Worth')
 
 class EmergencyFundForm(FlaskForm):
-    # Step 1: Personal Information
     first_name = StringField('First Name', validators=[DataRequired()])
     email = StringField('Email', validators=[Optional(), Email()])
     language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
-    # Step 2: Financial Details
     monthly_expenses = FloatField('Monthly Expenses', validators=[DataRequired(), NumberRange(min=0)])
     monthly_income = FloatField('Monthly Income', validators=[Optional(), NumberRange(min=0)], default=0)
     current_savings = FloatField('Current Savings', validators=[Optional(), NumberRange(min=0)], default=0)
     risk_level = SelectField('Risk Level', choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], validators=[DataRequired()])
     dependents = IntegerField('Number of Dependents', validators=[Optional(), NumberRange(min=0)], default=0)
-    # Step 3: Savings Timeline
     timeline = SelectField('Savings Timeline', choices=[('6', '6 Months'), ('12', '12 Months'), ('18', '18 Months')], validators=[DataRequired()])
     auto_email = SelectField('Auto Email Results', choices=[('yes', 'Yes'), ('no', 'No')], default='no')
     submit = SubmitField('Calculate Fund')
@@ -485,10 +238,16 @@ def reload_scheduled_jobs():
                 logger.info(f"Reloaded job {job['job_id']} for bill {bill['RecordID']}")
 
 # Routes
-@app.route('/', methods=['GET', 'POST'])
-def fill_form():
+@app.route('/', methods=['GET'])
+def index():
+    lang = session.get('language', 'en')
+    return render_template('index.html', translations=translations[lang], language=lang)
+
+@app.route('/start_tool', methods=['POST'])
+def start_tool():
     form = UserForm()
     lang = session.get('language', 'en')
+    tool = request.form.get('tool')
     
     if form.validate_on_submit():
         try:
@@ -496,12 +255,25 @@ def fill_form():
             session['email'] = form.email.data.lower() if form.email.data else None
             session['language'] = form.language.data
             logger.info(f"Session updated: first_name={session['first_name']}, email={session['email']}, language={session['language']}")
+            if tool == 'bill_planner':
+                return redirect(url_for('view_edit_bills'))
+            elif tool == 'net_worth':
+                return redirect(url_for('net_worth'))
+            elif tool == 'emergency_fund':
+                return redirect(url_for('emergency_fund'))
             return redirect(url_for('dashboard'))
         except Exception as e:
             logger.error(f"Error updating session: {e}")
             flash(translations[lang]['Error saving user data'], 'danger')
     
-    return render_template('bill_form.html', form=form, translations=translations[lang])
+    return render_template('bill_form.html', form=form, translations=translations[lang], tool=tool)
+
+@app.route('/change_language', methods=['GET'])
+def change_language():
+    lang = request.args.get('language', 'en')
+    if lang in ['en', 'ha']:
+        session['language'] = lang
+    return redirect(request.args.get('next', url_for('index')))
 
 @app.route('/view_edit_bills', methods=['GET', 'POST'])
 def view_edit_bills():
@@ -726,7 +498,6 @@ def net_worth():
             'auto_email': form.auto_email.data
         }
         
-        # Calculate net worth
         bills = load_bills()
         outstanding_bills = sum(b['Amount'] for b in bills if b['Status'] == 'Unpaid')
         total_assets = (session['net_worth_data']['cash'] +
@@ -741,7 +512,6 @@ def net_worth():
                            outstanding_bills)
         net_worth = total_assets - total_liabilities
         
-        # Insights
         insights = []
         if net_worth >= 0:
             insights.append(translations[lang]['Positive Net Worth'])
@@ -766,10 +536,8 @@ def net_worth():
         if total_assets > 0 and total_liabilities / total_assets > 0.6:
             insights.append(translations[lang]['High Debt Ratio'])
         
-        # Gamification
         badge = translations[lang]['Net Worth Milestone'] if net_worth >= 0 else None
         
-        # Auto-email
         if session['net_worth_data']['auto_email'] == 'yes' and session['net_worth_data']['email']:
             send_email(
                 session['net_worth_data']['email'],
@@ -869,14 +637,12 @@ def emergency_fund():
             'auto_email': form.auto_email.data
         }
         
-        # Calculate emergency fund
         months = {'low': 3, 'medium': 6, 'high': 9}[session['emergency_fund_data']['risk_level']]
         months += session['emergency_fund_data']['dependents']
         target_fund = session['emergency_fund_data']['monthly_expenses'] * months
         savings_gap = target_fund - session['emergency_fund_data']['current_savings']
         monthly_savings = savings_gap / session['emergency_fund_data']['timeline'] if savings_gap > 0 else 0
         
-        # Insights
         insights = [
             translations[lang]['Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.'].format(
                 amount=round(monthly_savings, 2),
@@ -884,10 +650,8 @@ def emergency_fund():
             )
         ]
         
-        # Gamification
         badge = translations[lang]['Fund Builder']
         
-        # Auto-email
         if session['emergency_fund_data']['auto_email'] == 'yes' and session['emergency_fund_data']['email']:
             send_email(
                 session['emergency_fund_data']['email'],
