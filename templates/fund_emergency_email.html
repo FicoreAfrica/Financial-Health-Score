@@ -1,0 +1,97 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ translations['Emergency Fund Calculator'] }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; margin: 0; padding: 0; }
+        .container { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+        .header { text-align: center; padding: 10px; background: #1E7F71; color: #fff; border-radius: 8px 8px 0 0; }
+        .logo { max-width: 150px; margin-bottom: 10px; }
+        .content { padding: 20px; }
+        h2 { color: #2E7D32; }
+        p { font-size: 16px; color: #333; }
+        .stat { font-size: 16px; margin: 10px 0; }
+        .insights { background: #e8f4f8; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .badge { font-size: 16px; color: #2E7D32; font-weight: bold; }
+        .footer { text-align: center; padding: 10px; background: #f4f4f4; border-radius: 0 0 8px 8px; }
+        .footer a { color: #0288D1; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="{{ url_for('static', filename='img/ficore_logo.png', _external=True) }}" alt="Ficore Africa Logo" class="logo">
+            <h2>{{ translations['Emergency Fund Calculator'] }}</h2>
+        </div>
+        <div class="content">
+            <p>{{ translations['Dear'] }} {{ user_name }},</p>
+            <p>{{ translations['Thank you for using Ficore Africa'] }}. {{ translations['Here are your Emergency Fund Calculator results'] }}:</p>
+            <div class="stat">
+                <strong>{{ translations['Target Fund Size'] }}:</strong> ₦{{ target_fund|round(2) }}
+            </div>
+            <div class="stat">
+                <strong>{{ translations['Savings Gap'] }}:</strong> ₦{{ savings_gap|round(2) }}
+            </div>
+            <div class="stat">
+                <strong>{{ translations['Monthly Savings Goal'] }}:</strong> ₦{{ monthly_savings|round(2) }}
+            </div>
+            <div class="stat">
+                <strong>{{ translations['Timeline'] }}:</strong> {{ timeline }} {{ translations['Months'] }}
+            </div>
+            {% if badge %}
+                <div class="badge">{{ badge }}</div>
+            {% endif %}
+            <div class="insights">
+                <h3>{{ translations['Insights'] }}</h3>
+                {% for insight in insights %}
+                    <p>{{ insight }}</p>
+                {% endfor %}
+            </div>
+            <p>{{ translations['Manage your bills'] }} <a href="{{ url_for('dashboard', _external=True) }}">{{ translations['Go to Dashboard'] }}</a>.</p>
+        </div>
+        <div class="footer">
+            <p>{{ translations['Thank you for using Ficore Africa'] }}. <a href="mailto:ficoreafrica@gmail.com">{{ translations['Contact Us'] }}</a></p>
+        </div>
+    </div>
+</body>
+</html>
