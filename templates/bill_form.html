@@ -21,7 +21,7 @@
             <h2>{{ translations['Bill Planner'] }}</h2>
             <p>{{ translations['Financial growth passport for Africa'] }}</p>
         </div>
-        <form method="POST" action="{{ url_for('fill_form') }}">
+        <form method="POST" action="{{ url_for('bill_form') }}">
             {{ form.hidden_tag() }}
             <div class="mb-3">
                 <label class="form-label">{{ translations['Enter your first name'] }}</label>
