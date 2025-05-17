@@ -33,6 +33,14 @@ os.makedirs(app.instance_path, exist_ok=True)
 os.makedirs(os.path.join(app.instance_path, 'sessions'), exist_ok=True)
 os.makedirs(os.path.join(app.root_path, 'templates'), exist_ok=True)
 
+# Default spending limits per category (monthly, in ₦)
+SPENDING_LIMITS = {
+    'utilities': 20000,
+    'rent': 50000,
+    'subscription': 10000,
+    'other': 15000
+}
+
 # Translations
 translations = {
     'en': {
@@ -70,11 +78,19 @@ translations = {
         'On due date': 'On due date',
         'Save Bill': 'Save Bill',
         'Edit': 'Edit',
+        'Delete': 'Delete',
+        'Confirm Delete': 'Are you sure you want to delete this bill?',
+        'Bill Deleted': 'Bill deleted successfully',
         'Back': 'Back',
         'Go to Dashboard': 'Go to Dashboard',
         'Dashboard': 'Dashboard',
+        'Paid Bills': 'Paid Bills',
         'Unpaid Bills': 'Unpaid Bills',
         'Total Bills': 'Total Bills',
+        'Total Paid': 'Total Paid',
+        'Total Unpaid': 'Total Unpaid',
+        'Overdue Bills': 'Overdue Bills',
+        'Upcoming Bills': 'Upcoming Bills',
         'Spending by Category': 'Spending by Category',
         'Bills Due': 'Bills Due',
         'Today': 'Today',
@@ -91,65 +107,75 @@ translations = {
         'Pay now to avoid late fees': 'Pay now to avoid late fees',
         'Manage your bills': 'Manage your bills',
         'Thank you for using Ficore Africa': 'Thank you for using Ficore Africa',
-        'Due date must be today or in the future': 'Due date must be today or in the future'
+        'Due date must be today or in the future': 'Due date must be today or in the future',
+        'Spending Limit Exceeded': 'You’ve exceeded ₦{limit} on {category} this month'
     },
     'ha': {
-        'Bill Planner': 'Mai Tsara Kuɗi',
-        'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don Afirka',
+        'Bill Planner': 'Tsara Kuɗin Biya',
+        'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don mutanen Afirka',
         'Enter your first name': 'Shigar da sunanka na farko',
         'Enter your email': 'Shigar da imel ɗinka',
-        'Choose your language': 'Zaɓi yarenka',
+        'Choose your language': 'Zaɓi yaren da akeso',
         'Next': 'Na gaba',
-        'View and Edit Bills': 'Duba da Gyara Kuɗi',
+        'View and Edit Bills': 'Wajen Dubawa da Gyara Tsari',
         'Select Category': 'Zaɓi Rukuni',
-        'All': 'Duk',
-        'Utilities': 'Kayan aiki',
-        'Rent': 'Haya',
-        'Subscription': 'Biyan kuɗi',
-        'Other': 'Sauran',
-        'Description': 'Bayanin',
+        'All': 'Duka',
+        'Utilities': 'Kayan Amfani',
+        'Rent': 'Kudin Haya',
+        'Subscription': 'Biyan Subscription',
+        'Other': 'Abu Na Daban',
+        'Description': 'Bayanan Tsari',
         'Amount': 'Adadin',
-        'Due Date': 'Ranar Karewa',
+        'Due Date': 'Ranar Biya',
         'Status': 'Matsayi',
         'Paid': 'An Biya',
         'Unpaid': 'Ba a Biya ba',
-        'Add New Bill': 'Ƙara Sabon Kuɗi',
+        'Add New Bill': 'Sabon Kuɗin Biya',
         'What is this bill for?': 'Wannan kuɗin na me ne?',
         'How much is the bill? (₦)': 'Nawa ne kuɗin? (₦)',
-        'When is this bill due?': 'Yaushe ne wannan kuɗin zai kare?',
-        'How often does this bill occur?': 'Sau nawa wannan kuɗin yake faruwa?',
+        'When is this bill due?': 'Yaushe ne za,a biya wannan kuɗin?',
+        'How often does this bill occur?': 'Sau nawa biyan wannan kuɗin yake faruwa?',
         'One-time': 'Lokaci ɗaya',
         'Weekly': 'Mako-mako',
         'Monthly': 'Kowane wata',
-        'Quarterly': 'Kowane kwata',
+        'Quarterly': 'Kowane Wata Uku',
         'Send me reminders': 'Aiko mini da tunatarwa',
         '3 days before': 'Kwanaki 3 kafin',
         '1 day before': 'Rana 1 kafin',
-        'On due date': 'A ranar karewa',
-        'Save Bill': 'Ajiye Kuɗi',
+        'On due date': 'A ranar Biya',
+        'Save Bill': 'Adana Kuɗin Biya',
         'Edit': 'Gyara',
+        'Delete': 'Goge',
+        'Confirm Delete': 'Shin ka tabbatar kana so ka goge wannan kuɗin biyan?',
+        'Bill Deleted': 'An goge kuɗin biyan cikin nasara',
         'Back': 'Koma baya',
         'Go to Dashboard': 'Je zuwa Dashboard',
-        'Dashboard': 'Dashboard',
+        'Dashboard': 'Allon Bayanai',
+        'Paid Bills': 'Kuɗin da aka biya',
         'Unpaid Bills': 'Kuɗin da ba a biya ba',
-        'Total Bills': 'Jimlar Kuɗi',
-        'Spending by Category': 'Kashewa ta Rukuni',
-        'Bills Due': 'Kuɗin da za a biya',
+        'Total Bills': 'Jimlar Kuɗin Biya',
+        'Total Paid': 'Jimlar wanda aka biya',
+        'Total Unpaid': 'Jimlar wanda ba a biya ba',
+        'Overdue Bills': 'Kuɗin da suka wuce kwanan watan biya',
+        'Upcoming Bills': 'Kuɗin da ke zuwa nan gaba',
+        'Spending by Category': 'Rukunin Kudin Kashewa',
+        'Bills Due': 'Kuɗin da ranar biya ya masto kusa',
         'Today': 'Yau',
         'This Week': 'Wannan Mako',
         'This Month': 'Wannan Wata',
-        'Tips for Managing Bills': 'Shawara don Sarrafa Kuɗi',
-        'Pay bills early to avoid late fees. Use mobile money for quick payments.': 'Biya kuɗi da wuri don guje wa jaruman jinkiri. Yi amfani da kuɗin wayar hannu don biya cikin sauri.',
+        'Tips for Managing Bills': 'Shawara don Sarrafa Kuɗin Biya',
+        'Pay bills early to avoid late fees. Use mobile money for quick payments.': 'Biya kuɗi da wuri don guje wa kalubalen jinkiri kamar karin kudin ruwa. Yi amfani da wayar hannunku don biya cikin sauri.',
         'Switch to energy-efficient utilities to save money.': 'Canja zuwa kayan aiki masu amfani da makamashi don ajiyar kuɗi.',
         'Plan monthly bills to manage your budget better.': 'Tsara kuɗin kowane wata don sarrafa kasafin kuɗin ka mafi kyau.',
-        'Dear': 'Masoyi',
+        'Dear': 'Barka',
         'Bill Reminder': 'Tunatarwar Kuɗi',
-        'Your bill is due soon': 'Kuɗin ka yana kusa da karewa',
-        'Due': 'Karewa',
-        'Pay now to avoid late fees': 'Biya yanzu don guje wa jaruman jinkiri',
+        'Your bill is due soon': 'Lokacin biyan Kudin yana kusa',
+        'Due': 'Ya Iso',
+        'Pay now to avoid late fees': 'Biya yanzu don guje wa kalubalen jinkiri',
         'Manage your bills': 'Sarrafa kuɗin ka',
-        'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka',
-        'Due date must be today or in the future': 'Ranar karewa dole ne ta kasance yau ko a nan gaba'
+        'Thank you for using Ficore Africa': 'Muna godiya da amfani da Ficore Afirka',
+        'Due date must be today or in the future': 'Ranar Biya dole ne ta kasance yau ko a nan gaba',
+        'Spending Limit Exceeded': 'Ka wuce ₦{limit} akan {category} a wannan wata'
     }
 }
 
@@ -213,7 +239,6 @@ def generate_recurring_bills(bill, current_date):
     if recurrence == 'one-time':
         return [bill]
     
-    # Generate up to 12 future instances (1 year)
     for i in range(12):
         if recurrence == 'weekly':
             next_date = due_date + timedelta(days=7 * (i + 1))
@@ -228,7 +253,7 @@ def generate_recurring_bills(bill, current_date):
         new_bill = bill.copy()
         new_bill['DueDate'] = next_date.strftime('%Y-%m-%d')
         new_bill['RecordID'] = f"{base_id}_{i + 1}"
-        new_bill['Status'] = 'Unpaid'  # Reset status for future bills
+        new_bill['Status'] = 'Unpaid'
         bills.append(new_bill)
     
     return [bill] + bills
@@ -299,6 +324,15 @@ def schedule_reminders(bill, email, user_name, lang):
     
     bill['ScheduledJobs'] = scheduled_jobs
 
+def cancel_bill_reminders(record_id):
+    try:
+        for job in scheduler.get_jobs():
+            if job.id.startswith(f"bill_{record_id}_"):
+                job.remove()
+        logger.info(f"Cancelled reminders for bill {record_id}")
+    except Exception as e:
+        logger.error(f"Error cancelling reminders for bill {record_id}: {e}")
+
 # Reload scheduled jobs on app start
 def reload_scheduled_jobs():
     bills = load_bills()
@@ -317,7 +351,7 @@ def reload_scheduled_jobs():
                 )
                 logger.info(f"Reloaded job {job['job_id']} for bill {bill['RecordID']}")
 
-# Forms
+# Routes
 @app.route('/', methods=['GET', 'POST'])
 def fill_form():
     form = UserForm()
@@ -355,7 +389,6 @@ def view_edit_bills():
     filtered_bills = [b for b in bills if category == 'all' or b['Category'] == category]
     
     if form.validate_on_submit():
-        # Validate due date
         due_date = form.due_date.data
         if due_date < datetime.now().date():
             flash(translations[lang]['Due date must be today or in the future'], 'danger')
@@ -389,15 +422,16 @@ def view_edit_bills():
             bill['RecordID'] = str(len(bills) + 1)
             recurring_bills = generate_recurring_bills(bill, datetime.now())
             bills.extend(recurring_bills)
+            for b in recurring_bills:
+                schedule_reminders(b, email, user_name, lang)
         
-        for b in recurring_bills if not record_id else [bill]:
-            schedule_reminders(b, email, user_name, lang)
+        if record_id:
+            schedule_reminders(bill, email, user_name, lang)
         
         save_bills(bills)
         flash(translations[lang]['Save Bill'], 'success')
         return redirect(url_for('view_edit_bills', category=category))
     
-    # Pre-populate form for editing
     record_id = request.args.get('record_id')
     if record_id:
         for bill in bills:
@@ -432,6 +466,19 @@ def toggle_status(record_id):
     save_bills(bills)
     return redirect(url_for('view_edit_bills'))
 
+@app.route('/delete_bill/<record_id>')
+def delete_bill(record_id):
+    bills = load_bills()
+    lang = session.get('language', 'en')
+    for i, bill in enumerate(bills):
+        if bill.get('RecordID') == record_id:
+            bills.pop(i)
+            cancel_bill_reminders(record_id)
+            save_bills(bills)
+            flash(translations[lang]['Bill Deleted'], 'success')
+            break
+    return redirect(url_for('view_edit_bills'))
+
 @app.route('/dashboard')
 def dashboard():
     lang = session.get('language', 'en')
@@ -439,12 +486,19 @@ def dashboard():
     
     if not bills:
         return render_template('dashboard.html',
+                            paid_count=0,
                             unpaid_count=0,
+                            total_paid=0,
+                            total_unpaid=0,
+                            overdue_count=0,
+                            total_overdue=0,
                             total_bills=0,
                             categories={},
                             due_today=[],
                             due_week=[],
                             due_month=[],
+                            upcoming_bills=[],
+                            spending_alerts=[],
                             tips=[
                                 translations[lang]['Pay bills early to avoid late fees. Use mobile money for quick payments.'],
                                 translations[lang]['Switch to energy-efficient utilities to save money.'],
@@ -454,7 +508,21 @@ def dashboard():
                             translations=translations[lang],
                             error=translations[lang]['No bills found'])
     
-    unpaid_count = len([b for b in bills if b['Status'] == 'Unpaid'])
+    today = datetime.now().date()
+    week_end = today + timedelta(days=7)
+    month_end = today.replace(day=28) + timedelta(days=4)
+    
+    paid_bills = [b for b in bills if b['Status'] == 'Paid']
+    unpaid_bills = [b for b in bills if b['Status'] == 'Unpaid']
+    overdue_bills = [b for b in bills if b['Status'] == 'Unpaid' and datetime.strptime(b['DueDate'], '%Y-%m-%d').date() < today]
+    
+    paid_count = len(paid_bills)
+    unpaid_count = len(unpaid_bills)
+    overdue_count = len(overdue_bills)
+    
+    total_paid = sum(b['Amount'] for b in paid_bills)
+    total_unpaid = sum(b['Amount'] for b in unpaid_bills)
+    total_overdue = sum(b['Amount'] for b in overdue_bills)
     total_bills = sum(b['Amount'] for b in bills)
     
     categories = {}
@@ -462,13 +530,32 @@ def dashboard():
         cat = bill['Category']
         categories[cat] = categories.get(cat, 0) + bill['Amount']
     
-    today = datetime.now().date()
-    week_end = today + timedelta(days=7)
-    month_end = today.replace(day=28) + timedelta(days=4)
-    
     due_today = [b for b in bills if b['DueDate'] == today.strftime('%Y-%m-%d')]
     due_week = [b for b in bills if today.strftime('%Y-%m-%d') <= b['DueDate'] <= week_end.strftime('%Y-%m-%d')]
     due_month = [b for b in bills if today.strftime('%Y-%m-%d') <= b['DueDate'] <= month_end.strftime('%Y-%m-%d')]
+    
+    upcoming_bills = sorted(
+        [b for b in bills if datetime.strptime(b['DueDate'], '%Y-%m-%d').date() >= today],
+        key=lambda x: datetime.strptime(x['DueDate'], '%Y-%m-%d')
+    )[:5]
+    
+    spending_alerts = []
+    monthly_spending = {}
+    current_month = today.strftime('%Y-%m')
+    for bill in bills:
+        bill_month = bill['DueDate'][:7]
+        if bill_month == current_month:
+            cat = bill['Category']
+            monthly_spending[cat] = monthly_spending.get(cat, 0) + bill['Amount']
+    
+    for cat, amount in monthly_spending.items():
+        limit = SPENDING_LIMITS.get(cat, 10000)
+        if amount > limit:
+            alert = translations[lang]['Spending Limit Exceeded'].format(
+                limit=limit,
+                category=translations[lang][cat.capitalize()]
+            )
+            spending_alerts.append(alert)
     
     tips = [
         translations[lang]['Pay bills early to avoid late fees. Use mobile money for quick payments.'],
@@ -478,12 +565,19 @@ def dashboard():
     
     try:
         return render_template('dashboard.html',
+                            paid_count=paid_count,
                             unpaid_count=unpaid_count,
+                            total_paid=total_paid,
+                            total_unpaid=total_unpaid,
+                            overdue_count=overdue_count,
+                            total_overdue=total_overdue,
                             total_bills=total_bills,
                             categories=categories,
                             due_today=due_today,
                             due_week=due_week,
                             due_month=due_month,
+                            upcoming_bills=upcoming_bills,
+                            spending_alerts=spending_alerts,
                             tips=tips,
                             bills=bills,
                             translations=translations[lang])
