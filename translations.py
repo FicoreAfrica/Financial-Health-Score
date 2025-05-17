@@ -5,6 +5,7 @@ translations = {
         'Enter your first name': 'Enter your first name',
         'Enter your email': 'Enter your email',
         'Choose your language': 'Choose your language',
+        'Get Started': 'Get Started',
         'English': 'English',
         'Hausa': 'Hausa',
         'Next': 'Next',
@@ -239,6 +240,7 @@ translations = {
         'Based on your bills, save ₦{amount}/month to reach your emergency fund goal in {months} months.': 'Bisa kuɗin ka, ajiye ₦{amount}/wata don isa burin asusun gaggawa a cikin watanni {months}.',
         'Error sending email': 'Kuskure wajen aikawa da imel',
         'Error saving user data': 'Kuskure wajen ajiye bayani mai amfani',
+        'Get Started': 'Fara',
         'Test email sent': 'An aika imel na gwaji'
     }
 }
