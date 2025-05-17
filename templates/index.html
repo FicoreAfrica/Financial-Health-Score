@@ -40,8 +40,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
-    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
-    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
     <style>
         body {
             font-family: 'Poppins', sans-serif;
@@ -138,7 +136,7 @@
             margin-right: 5px;
         }
         .hero {
-            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('/static/images/hero-bg.jpg');
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), linear-gradient(135deg, #2E7D32, #0288D1);
             background-size: cover;
             background-position: center;
             height: 100vh;
@@ -551,7 +549,7 @@
             <a href="{{ FACEBOOK_URL }}" target="_blank" aria-label="{{ translations.get('Follow on Facebook', 'Follow on Facebook') }}"><i class="fab fa-facebook"></i></a>
         </div>
         <div class="footer-buttons">
-            <a href="mailto:ficoreafrica@gmail.com"><i class="fas fa-envelope"></i> {{ translations.get('Click to Email', 'Click to Email') }}</a>
+            <a href="mailto:fic flushedoreafrica@gmail.com"><i class="fas fa-envelope"></i> {{ translations.get('Click to Email', 'Click to Email') }}</a>
             <a href="{{ FEEDBACK_FORM_URL }}" target="_blank"><i class="fas fa-comment"></i> {{ translations.get('Provide Feedback', 'Provide Feedback') }}</a>
             <a href="{{ WAITLIST_FORM_URL }}" target="_blank"><i class="fas fa-users"></i> {{ translations.get('Join Waitlist', 'Join Waitlist') }}</a>
             <a href="{{ CONSULTANCY_FORM_URL }}" target="_blank"><i class="fas fa-briefcase"></i> {{ translations.get('Book Consultancy', 'Book Consultancy') }}</a>
