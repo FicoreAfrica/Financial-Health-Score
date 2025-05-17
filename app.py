@@ -241,7 +241,8 @@ def reload_scheduled_jobs():
 @app.route('/', methods=['GET'])
 def index():
     lang = session.get('language', 'en')
-    return render_template('index.html', translations=translations[lang], language=lang)
+    form = UserForm()
+    return render_template('index.html', translations=translations[lang], language=lang, form=form)
 
 @app.route('/start_tool', methods=['POST'])
 def start_tool():
@@ -723,6 +724,11 @@ def emergency_fund_share():
         flash(translations[lang]['Error sending email'], 'danger')
     
     return redirect(url_for('emergency_fund'))
+
+@app.route('/logout', methods=['GET'])
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
 
 @app.route('/test_email')
 def test_email():
