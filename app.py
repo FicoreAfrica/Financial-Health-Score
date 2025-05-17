@@ -489,7 +489,7 @@ def net_worth():
             'cash': form.cash.data or 0,
             'physical_assets': form.physical_assets.data or 0,
             'investments': form.investments.data or 0,
-            'loans': form.cash.data or 0,
+            'loans': form.loans.data or 0,
             'other_debts': form.other_debts.data or 0,
             'auto_email': form.auto_email.data
         }
@@ -717,6 +717,26 @@ def logout():
     lang = session.get('language', 'en')
     flash(translations[lang]['You have been logged out'], 'success')
     return redirect(url_for('index'))
+
+@app.route('/change_language', methods=['GET', 'POST'])
+def change_language():
+    lang = session.get('language', 'en')
+    supported_languages = ['en', 'ha']
+    
+    if request.method == 'POST':
+        new_lang = request.form.get('language')
+    else:
+        new_lang = request.args.get('language')
+    
+    if new_lang in supported_languages:
+        session['language'] = new_lang
+        flash(translations[new_lang]['Language changed successfully'], 'success')
+    else:
+        flash(translations[lang]['Invalid language selected'], 'danger')
+    
+    # Redirect to the previous page or index
+    referer = request.headers.get('Referer')
+    return redirect(referer if referer else url_for('index'))
 
 if __name__ == '__main__':
     reload_scheduled_jobs()
