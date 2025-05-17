@@ -1,33 +1,25 @@
 <script type="text/javascript">
-        var gk_isXlsx = false;
-        var gk_xlsxFileLookup = {};
-        var gk_fileData = {};
-        function filledCell(cell) {
-          return cell !== '' && cell != null;
-        }
-        function loadFileData(filename) {
+    var gk_isXlsx = false;
+    var gk_xlsxFileLookup = {};
+    var gk_fileData = {};
+    function filledCell(cell) {
+        return cell !== '' && cell != null;
+    }
+    function loadFileData(filename) {
         if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
             try {
                 var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
                 var firstSheetName = workbook.SheetNames[0];
                 var worksheet = workbook.Sheets[firstSheetName];
-
-                // Convert sheet to JSON to filter blank rows
                 var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
-                // Filter out blank rows (rows where all cells are empty, null, or undefined)
                 var filteredData = jsonData.filter(row => row.some(filledCell));
-
-                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
                 var headerRowIndex = filteredData.findIndex((row, index) =>
-                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                    row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
                 );
-                // Fallback
                 if (headerRowIndex === -1 || headerRowIndex > 25) {
-                  headerRowIndex = 0;
+                    headerRowIndex = 0;
                 }
-
-                // Convert filtered JSON back to CSV
-                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex));
                 csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
                 return csv;
             } catch (e) {
@@ -36,8 +28,9 @@
             }
         }
         return gk_fileData[filename] || "";
-        }
-        </script><!DOCTYPE html>
+    }
+</script>
+<!DOCTYPE html>
 <html lang="{{ language | default('en') }}">
 <head>
     <meta charset="UTF-8">
@@ -112,7 +105,7 @@
             max-width: 120px;
             min-width: 100px;
             font-size: 0.9rem;
-            background: transparent url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="white"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 8px center;
+            background: transparent url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 24" fill="white"><path d="M7 10l5 5 5-5z"/></svg>') no-repeat right 8px center;
             color: white;
             appearance: none;
             -webkit-appearance: none;
@@ -193,6 +186,8 @@
             max-width: 100%;
             width: 280px;
             box-sizing: border-box;
+            border: none;
+            cursor: pointer;
         }
         .hero .cta-button:hover {
             background: linear-gradient(135deg, #1B5E20, #01579B);
@@ -240,7 +235,7 @@
             color: #666;
             margin-bottom: 20px;
         }
-        .tool-card a {
+        .tool-card .btn {
             padding: 12px 25px;
             background: linear-gradient(135deg, #2E7D32, #0288D1);
             color: white;
@@ -249,8 +244,10 @@
             font-size: 1rem;
             display: inline-block;
             white-space: nowrap;
+            border: none;
+            cursor: pointer;
         }
-        .tool-card a:hover {
+        .tool-card .btn:hover {
             background: linear-gradient(135deg, #1B5E20, #01579B);
         }
         .tool-card .notify-me {
@@ -266,6 +263,20 @@
         }
         .tool-card .notify-me:hover {
             background: #90A4AE;
+        }
+        .tool-card form {
+            margin-top: 10px;
+        }
+        .tool-card input, .tool-card select {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+        .tool-card input[type="hidden"], .tool-card input[name="csrf_token"] {
+            display: none;
         }
         .testimonials-section {
             margin-top: 40px;
@@ -430,7 +441,7 @@
             .hero p { font-size: 1rem; text-align: center; }
             .hero .cta-button { font-size: 1.1rem; padding: 12px 25px; }
             .tools-grid { grid-template-columns: 1fr; }
-            .tool-card a, .tool-card .notify-me { font-size: 1rem; padding: 12px 20px; }
+            .tool-card .btn, .tool-card .notify-me { font-size: 1rem; padding: 12px 20px; }
         }
         @media (max-width: 480px) {
             .navbar { flex-direction: column; align-items: flex-start; padding: 10px 15px; }
@@ -453,8 +464,8 @@
         <h1>Ficore Africa</h1>
         <div class="nav-right">
             <div class="nav-controls">
-                <form action="{{ url_for('index') }}" method="GET">
-                    <input type="hidden" name="tool" value="{{ tool | default('') }}">
+                <form action="{{ url_for('change_language') }}" method="GET">
+                    <input type="hidden" name="next" value="{{ request.path }}">
                     <label for="language-select" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
                     <select id="language-select" name="language" onchange="this.form.submit()" aria-label="{{ trans.get('Choose your language', 'Choose your language') }}">
                         <option value="en" {% if language == 'en' %}selected{% endif %}>English</option>
@@ -470,7 +481,20 @@
     <section class="hero">
         <h2>{{ trans.get('Your All-in-One Toolkit for Personal & SME Financial Health Across Africa', 'Your All-in-One Toolkit for Personal & SME Financial Health Across Africa') }}</h2>
         <p>{{ trans.get('Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.', 'Use Ficore to Track your income, net worth, budgets, and bills, to grow your money with confidence.') }}</p>
-        <a href="{{ url_for('fill_form') }}" class="cta-button">{{ trans.get('Get Started with Bill Planner', 'Get Started with Bill Planner') }}</a>
+        <form action="{{ url_for('start_tool') }}" method="POST">
+            <input type="hidden" name="tool" value="bill_planner">
+            {{ form.csrf_token }}
+            <label for="first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
+            <input type="text" id="first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
+            <label for="email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
+            <input type="email" id="email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
+            <label for="language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+            <select id="language" name="language" required>
+                <option value="en">{{ trans.get('English', 'English') }}</option>
+                <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+            </select>
+            <button type="submit" class="cta-button">{{ trans.get('Get Started', 'Get Started') }}</button>
+        </form>
     </section>
     <section class="tools-section">
         <h2>{{ trans.get('Choose a Tool', 'Choose a Tool') }}</h2>
@@ -478,17 +502,56 @@
             <div class="tool-card">
                 <h3>{{ trans.get('Bill Planner', 'Bill Planner') }}</h3>
                 <p>{{ trans.get('Manage and mark bills as paid', 'Manage and mark bills as paid') }}</p>
-                <a href="{{ url_for('fill_form') }}" aria-label="{{ trans.get('Start Bill Planner', 'Start Bill Planner') }}">{{ trans.get('Start', 'Start') }}</a>
+                <form action="{{ url_for('start_tool') }}" method="POST">
+                    <input type="hidden" name="tool" value="bill_planner">
+                    {{ form.csrf_token }}
+                    <label for="bill_first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
+                    <input type="text" id="bill_first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
+                    <label for="bill_email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
+                    <input type="email" id="bill_email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
+                    <label for="bill_language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+                    <select id="bill_language" name="language" required>
+                        <option value="en">{{ trans.get('English', 'English') }}</option>
+                        <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                    </select>
+                    <button type="submit" class="btn" aria-label="{{ trans.get('Start Bill Planner', 'Start Bill Planner') }}">{{ trans.get('Start', 'Start') }}</button>
+                </form>
             </div>
             <div class="tool-card">
                 <h3>{{ trans.get('Net Worth Calculator', 'Net Worth Calculator') }}</h3>
                 <p>{{ trans.get('Net worth is assets minus liabilities', 'Net worth is assets minus liabilities') }}</p>
-                <a href="{{ url_for('net_worth') }}" aria-label="{{ trans.get('Start Net Worth Calculator', 'Start Net Worth Calculator') }}">{{ trans.get('Start', 'Start') }}</a>
+                <form action="{{ url_for('start_tool') }}" method="POST">
+                    <input type="hidden" name="tool" value="net_worth">
+                    {{ form.csrf_token }}
+                    <label for="networth_first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
+                    <input type="text" id="networth_first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
+                    <label for="networth_email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
+                    <input type="email" id="networth_email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
+                    <label for="networth_language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+                    <select id="networth_language" name="language" required>
+                        <option value="en">{{ trans.get('English', 'English') }}</option>
+                        <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                    </select>
+                    <button type="submit" class="btn" aria-label="{{ trans.get('Start Net Worth Calculator', 'Start Net Worth Calculator') }}">{{ trans.get('Start', 'Start') }}</button>
+                </form>
             </div>
             <div class="tool-card">
                 <h3>{{ trans.get('Emergency Fund Calculator', 'Emergency Fund Calculator') }}</h3>
                 <p>{{ trans.get('Aims to cover 3-6 months of expenses for financial security', 'Aims to cover 3-6 months of expenses for financial security') }}</p>
-                <a href="{{ url_for('emergency_fund') }}" aria-label="{{ trans.get('Start Emergency Fund Calculator', 'Start Emergency Fund Calculator') }}">{{ trans.get('Start', 'Start') }}</a>
+                <form action="{{ url_for('start_tool') }}" method="POST">
+                    <input type="hidden" name="tool" value="emergency_fund">
+                    {{ form.csrf_token }}
+                    <label for="fund_first_name" class="visually-hidden">{{ trans.get('Enter your first name', 'Enter your first name') }}</label>
+                    <input type="text" id="fund_first_name" name="first_name" placeholder="{{ trans.get('Enter your first name', 'Enter your first name') }}" required>
+                    <label for="fund_email" class="visually-hidden">{{ trans.get('Enter your email', 'Enter your email') }}</label>
+                    <input type="email" id="fund_email" name="email" placeholder="{{ trans.get('Enter your email', 'Enter your email') }}">
+                    <label for="fund_language" class="visually-hidden">{{ trans.get('Choose your language', 'Choose your language') }}</label>
+                    <select id="fund_language" name="language" required>
+                        <option value="en">{{ trans.get('English', 'English') }}</option>
+                        <option value="ha">{{ trans.get('Hausa', 'Hausa') }}</option>
+                    </select>
+                    <button type="submit" class="btn" aria-label="{{ trans.get('Start Emergency Fund Calculator', 'Start Emergency Fund Calculator') }}">{{ trans.get('Start', 'Start') }}</button>
+                </form>
             </div>
             <div class="tool-card">
                 <h3>{{ trans.get('Financial Health Score', 'Financial Health Score') }}</h3>
