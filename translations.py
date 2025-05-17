@@ -1,6 +1,6 @@
 translations = {
     'en': {
-        # Keys from your shared version (conflicts resolved by retaining your version)
+        # Existing keys from your shared version and prior merge
         'Bill Planner': 'Bill Planner',
         'Financial growth passport for Africa': 'Financial growth passport for Africa',
         'Enter your first name': 'Enter your first name',
@@ -121,8 +121,6 @@ translations = {
         'Error sending email': 'Error sending email',
         'Error saving user data': 'Error saving user data',
         'Test email sent': 'Test email sent',
-
-        # Unique keys from current translations.py (not in your version)
         'Language changed successfully': 'Language changed successfully',
         'Invalid language selected': 'Invalid language selected',
         'You have been logged out': 'You have been logged out',
@@ -146,10 +144,26 @@ translations = {
         'Risk Tolerance Level': 'Risk Tolerance Level',
         'How long are you willing to save for?': 'How long are you willing to save for?',
         'Send Results to My Email': 'Send Results to My Email',
-        'Months': 'Months'
+        'Months': 'Months',
+
+        # New tooltip keys
+        'Your first name for personalized results': 'Your first name for personalized results',
+        'Your regular costs like rent, food, transport, and bills': 'Your regular costs like rent, food, transport, and bills',
+        'Money you earn each month after taxes': 'Money you earn each month after taxes',
+        'Money you’ve already saved for emergencies': 'Money you’ve already saved for emergencies',
+        'How stable is your job or income? Low means very stable, high means less predictable': 'How stable is your job or income? Low means very stable, high means less predictable',
+        'Number of people relying on your income, like children or parents': 'Number of people relying on your income, like children or parents',
+        'How many months you plan to save to build your emergency fund': 'How many months you plan to save to build your emergency fund',
+        'Get your emergency fund plan sent to your inbox (optional)': 'Get your emergency fund plan sent to your inbox (optional)',
+        'Money saved in your bank account, mobile wallet, or cash at home': 'Money saved in your bank account, mobile wallet, or cash at home',
+        'Things like land, house, or car that belong to you': 'Things like land, house, or car that belong to you',
+        'Any money you’ve put into farming, shares, crypto, business, or co-operative savings': 'Any money you’ve put into farming, shares, crypto, business, or co-operative savings',
+        'Any money you borrowed from banks, apps, friends, or cooperative societies': 'Any money you borrowed from banks, apps, friends, or cooperative societies',
+        'Outstanding school fees, rent advance, or unpaid bills': 'Outstanding school fees, rent advance, or unpaid bills',
+        'Get your full net worth result sent to your inbox (optional)': 'Get your full net worth result sent to your inbox (optional)'
     },
     'ha': {
-        # Keys from your shared version (conflicts resolved by retaining your version)
+        # Existing keys from your shared version and prior merge
         'Bill Planner': 'Mai Tsara Kuɗi',
         'Financial growth passport for Africa': 'Fasfo na ci gaban kuɗi don Afirka',
         'Enter your first name': 'Shigar da sunanka na farko',
@@ -211,12 +225,12 @@ translations = {
         'Plan monthly bills to manage your budget better.': 'Tsara kuɗin kowane wata don sarrafa kasafin kuɗin ka mafi kyau.',
         'Dear': 'Masoyi',
         'Bill Reminder': 'Tunatarwar Kuɗi',
-        'Your bill is due soon': 'Kuɗin ka yana kusa da Ranar Biya',
-        'Due': 'Ranar Biya',
+        'Your bill is due soon': 'Kuɗin ka yana kusa da karewa',
+        'Due': 'Karewa',
         'Pay now to avoid late fees': 'Biya yanzu don guje wa jaruman jinkiri',
         'Manage your bills': 'Sarrafa kuɗin ka',
         'Thank you for using Ficore Africa': 'Na godiya da amfani da Ficore Afirka',
-        'Due date must be today or in the future': 'Ranar Biya dole ne ta kasance yau ko a nan gaba',
+        'Due date must be today or in the future': 'Ranar karewa dole ne ta kasance yau ko a nan gaba',
         'Spending Limit Exceeded': 'Ka wuce ₦{limit} akan {category} a wannan wata',
         'Net Worth Calculator': 'Kalkuleta na Darajar Kuɗi',
         'Know Your Net Worth': 'San Darajar Kuɗinka',
@@ -270,8 +284,6 @@ translations = {
         'Error saving user data': 'Kuskure wajen ajiye bayani mai amfani',
         'Get Started': 'Fara',
         'Test email sent': 'An aika imel na gwaji',
-
-        # Unique keys from current translations.py (not in your version)
         'Language changed successfully': 'An canza harshe cikin nasara',
         'Invalid language selected': 'Harshe mara inganci da aka zaɓa',
         'You have been logged out': 'An fitar da ku daga shiga',
@@ -295,6 +307,22 @@ translations = {
         'Risk Tolerance Level': 'Matsayin Haɗari',
         'How long are you willing to save for?': 'Har yaushe kake shirye ka ajiye kuɗi?',
         'Send Results to My Email': 'Aika sakamakon zuwa imel dina',
-        'Months': 'Watanni'
+        'Months': 'Watanni',
+
+        # New tooltip keys
+        'Your first name for personalized results': 'Sunan ku na farko don sakamako na musamman',
+        'Your regular costs like rent, food, transport, and bills': 'Kuɗin ku na yau da kullun kamar haya, abinci, sufuri, da kuɗi',
+        'Money you earn each month after taxes': 'Kuɗin da kuke samu kowace wata bayan haraji',
+        'Money you’ve already saved for emergencies': 'Kuɗin da kuka riga ajiye don gaggawa',
+        'How stable is your job or income? Low means very stable, high means less predictable': 'Yaya kwanciyar hankalin aikinku ko kuɗin shiga? Ƙarami yana nufin kwanciyar hankali sosai, mai yawa yana nufin rashin tabbas',
+        'Number of people relying on your income, like children or parents': 'Adadin mutanen da ke dogaro da kuɗin shiga, kamar yara ko iyaye',
+        'How many months you plan to save to build your emergency fund': 'Yawan watanni da kuke shirin ajiya don gina asusun gaggawa',
+        'Get your emergency fund plan sent to your inbox (optional)': 'Samun shirin asusun gaggawa zuwa akwatin imel ɗin ku (zaɓi)',
+        'Money saved in your bank account, mobile wallet, or cash at home': 'Kuɗin da aka ajiye a asusun banki, wallet na waya, ko kuɗi a gida',
+        'Things like land, house, or car that belong to you': 'Abubuwa kamar ƙasa, gida, ko mota da suke naka',
+        'Any money you’ve put into farming, shares, crypto, business, or co-operative savings': 'Kowane kuɗin da kuka saka a noma, hannun jari, crypto, kasuwanci, ko ajiyar haɗin gwiwa',
+        'Any money you borrowed from banks, apps, friends, or cooperative societies': 'Kowane kuɗin da kuka ranta daga bankuna, apps, abokai, ko ƙungiyoyin haɗin gwiwa',
+        'Outstanding school fees, rent advance, or unpaid bills': 'Kuɗin makaranta da ba a biya ba, ci gaban haya, ko kuɗin da ba a biya',
+        'Get your full net worth result sent to your inbox (optional)': 'Samun cikakken sakamakon darajar kuɗinku zuwa akwatin imel ɗin ku (zaɓi)'
     }
 }
