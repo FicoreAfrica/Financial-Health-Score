@@ -8,8 +8,9 @@ from email.mime.multipart import MIMEMultipart
 import uuid
 from flask import Flask, render_template, request, flash, redirect, url_for, session
 from flask_wtf import FlaskForm
-from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField, BooleanField
+from wtforms import StringField, FloatField, SelectField, DateField, SubmitField, SelectMultipleField, IntegerField, BooleanField, Field
 from wtforms.validators import DataRequired, Email, NumberRange, Optional
+from wtforms.widgets import TextInput
 from flask_session import Session
 from dotenv import load_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -43,6 +44,39 @@ SPENDING_LIMITS = {
     'other': 15000
 }
 
+# Custom widget for comma-separated numbers
+class CommaSeparatedNumberInput(TextInput):
+    def __call__(self, field, **kwargs):
+        kwargs.setdefault('type', 'text')
+        kwargs.setdefault('class', 'comma-separated')
+        return super().__call__(field, **kwargs)
+
+class CommaSeparatedFloatField(FloatField):
+    widget = CommaSeparatedNumberInput()
+    
+    def process_formdata(self, valuelist):
+        if valuelist:
+            try:
+                # Remove commas and convert to float
+                value = valuelist[0].replace(',', '')
+                self.data = float(value)
+            except ValueError:
+                self.data = None
+                raise ValueError('Invalid number format')
+
+class CommaSeparatedIntegerField(IntegerField):
+    widget = CommaSeparatedNumberInput()
+    
+    def process_formdata(self, valuelist):
+        if valuelist:
+            try:
+                # Remove commas and convert to integer
+                value = valuelist[0].replace(',', '')
+                self.data = int(value)
+            except ValueError:
+                self.data = None
+                raise ValueError('Invalid number format')
+
 # Forms
 class UserForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired()])
@@ -52,7 +86,7 @@ class UserForm(FlaskForm):
 
 class BillForm(FlaskForm):
     description = StringField('Description', validators=[DataRequired()])
-    amount = FloatField('Amount', validators=[DataRequired(), NumberRange(min=0)])
+    amount = CommaSeparatedFloatField('Amount', validators=[DataRequired(), NumberRange(min=0)])
     due_date = DateField('Due Date', validators=[DataRequired()])
     category = SelectField('Category', choices=[
         ('utilities', 'Utilities'),
@@ -79,11 +113,11 @@ class NetWorthForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired()])
     email = StringField('Email', validators=[Optional(), Email()])
     language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
-    cash = FloatField('Cash and Bank Balances', validators=[Optional(), NumberRange(min=0)], default=0)
-    physical_assets = FloatField('Physical Assets', validators=[Optional(), NumberRange(min=0)], default=0)
-    investments = FloatField('Investments & Other Assets', validators=[Optional(), NumberRange(min=0)], default=0)
-    loans = FloatField('Loans', validators=[Optional(), NumberRange(min=0)], default=0)
-    other_debts = FloatField('Other Debts', validators=[Optional(), NumberRange(min=0)], default=0)
+    cash = CommaSeparatedFloatField('Cash and Bank Balances', validators=[Optional(), NumberRange(min=0)])
+    physical_assets = CommaSeparatedFloatField('Physical Assets', validators=[Optional(), NumberRange(min=0)])
+    investments = CommaSeparatedFloatField('Investments & Other Assets', validators=[Optional(), NumberRange(min=0)])
+    loans = CommaSeparatedFloatField('Loans', validators=[Optional(), NumberRange(min=0)])
+    other_debts = CommaSeparatedFloatField('Other Debts', validators=[Optional(), NumberRange(min=0)])
     auto_email = BooleanField('Send Results to My Email', default=False)
     submit = SubmitField('Calculate Net Worth')
 
@@ -91,11 +125,11 @@ class EmergencyFundForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired()])
     email = StringField('Email', validators=[Optional(), Email()])
     language = SelectField('Language', choices=[('en', 'English'), ('ha', 'Hausa')], validators=[DataRequired()])
-    monthly_expenses = FloatField('Monthly Expenses', validators=[DataRequired(), NumberRange(min=0)])
-    monthly_income = FloatField('Monthly Income', validators=[Optional(), NumberRange(min=0)], default=0)
-    current_savings = FloatField('Current Savings', validators=[Optional(), NumberRange(min=0)], default=0)
+    monthly_expenses = CommaSeparatedFloatField('Monthly Expenses', validators=[DataRequired(), NumberRange(min=0)])
+    monthly_income = CommaSeparatedFloatField('Monthly Income', validators=[Optional(), NumberRange(min=0)])
+    current_savings = CommaSeparatedFloatField('Current Savings', validators=[Optional(), NumberRange(min=0)])
     risk_tolerance_level = SelectField('Risk Tolerance Level', choices=[('low', 'Low'), ('medium', 'Medium'), ('high', 'High')], validators=[DataRequired()])
-    dependents = IntegerField('Number of Dependents', validators=[Optional(), NumberRange(min=0)], default=0)
+    dependents = CommaSeparatedIntegerField('Number of Dependents', validators=[Optional(), NumberRange(min=0)])
     timeline = SelectField('How long are you willing to save for?', choices=[('6', '6 Months'), ('12', '12 Months'), ('18', '18 Months')], validators=[DataRequired()])
     auto_email = BooleanField('Send Results to My Email', default=False)
     submit = SubmitField('Calculate Fund')
