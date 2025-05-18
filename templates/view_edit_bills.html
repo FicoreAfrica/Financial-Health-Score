@@ -1,125 +1,136 @@
 <!DOCTYPE html>
-<html lang="{{ session.language|default('en') }}">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>{{ translations['View and Edit Bills'] }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="{{ url_for('static', filename='js/comma_format.js') }}"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f4f4f4; }
-        .container { max-width: 700px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
-        .header { text-align: center; padding: 10px; background: #1E7F71; color: #fff; border-radius: 8px 8px 0 0; }
-        .form-label { font-size: 1.1em; }
-        .form-control, .form-select { font-size: 1em; margin-bottom: 10px; }
-        .btn-primary { background: #2E7D32; border: none; font-size: 1.1em; }
-        .btn-primary:hover { background: #0288D1; }
-        .btn-secondary { background: #6c757d; font-size: 1.1em; }
-        .btn-danger { font-size: 1em; }
-        .table { font-size: 1em; }
-        .status-paid { color: green; }
-        .status-unpaid { color: red; }
-        .form-select[multiple] { height: 100px; }
+        .ficore-logo { max-width: 200px; margin: 20px auto; display: block; }
+        .btn-primary { background-color: #28a745; border-color: #28a745; }
+        .btn-primary:hover { background-color: #218838; border-color: #1e7e34; }
+        .form-control, .form-select { border-color: #007bff; }
+        .alert-container { margin-top: 20px; }
+        .table { background-color: #f8f9fa; }
+        .category-filter { margin-bottom: 20px; }
+        .form-container { max-width: 800px; margin: auto; padding: 0 15px; }
+        .table-responsive { overflow-x: auto; }
+        .action-btn { min-width: 60px; text-align: center; }
+        th, td { white-space: nowrap; }
+        @media (max-width: 576px) {
+            .table th, .table td { font-size: 14px; padding: 8px; }
+            .action-btn { font-size: 12px; padding: 4px 8px; }
+            .form-control, .form-select { font-size: 14px; }
+        }
+        /* Customize with Ficore's actual logo and colors if different */
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h2>{{ translations['View and Edit Bills'] }}</h2>
-        </div>
+    <div class="container text-center">
+        <!-- Ficore Logo -->
+        <img src="{{ url_for('static', filename='imag/ficore_logo.png') }}" alt="Ficore Africa Logo" class="ficore-logo">
+        <!-- Replace 'ficore_logo.png' with your actual logo file -->
+
+        <h1>{{ translations['View and Edit Bills'] }}</h1>
+
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }}">{{ message }}</div>
-                {% endfor %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
             {% endif %}
         {% endwith %}
-        <div class="mb-3">
-            <label class="form-label">{{ translations['Select Category'] }}</label>
-            <select class="form-select" onchange="window.location.href='{{ url_for('view_edit_bills') }}?category='+this.value">
-                <option value="all" {% if category == 'all' %}selected{% endif %}>{{ translations['All'] }}</option>
-                <option value="utilities" {% if category == 'utilities' %}selected{% endif %}>{{ translations['Utilities'] }}</option>
-                <option value="rent" {% if category == 'rent' %}selected{% endif %}>{{ translations['Rent'] }}</option>
-                <option value="subscription" {% if category == 'subscription' %}selected{% endif %}>{{ translations['Subscription'] }}</option>
-                <option value="other" {% if category == 'other' %}selected{% endif %}>{{ translations['Other'] }}</option>
+
+        <div class="category-filter">
+            <label for="category">{{ translations['Select Category'] }}</label>
+            <select id="category" class="form-select" onchange="window.location.href=this.value">
+                <option value="{{ url_for('view_edit_bills', category='all') }}" {% if category == 'all' %}selected{% endif %}>{{ translations['All'] }}</option>
+                <option value="{{ url_for('view_edit_bills', category='utilities') }}" {% if category == 'utilities' %}selected{% endif %}>{{ translations['Utilities'] }}</option>
+                <option value="{{ url_for('view_edit_bills', category='rent') }}" {% if category == 'rent' %}selected{% endif %}>{{ translations['Rent'] }}</option>
+                <option value="{{ url_for('view_edit_bills', category='subscription') }}" {% if category == 'subscription' %}selected{% endif %}>{{ translations['Subscription'] }}</option>
+                <option value="{{ url_for('view_edit_bills', category='other') }}" {% if category == 'other' %}selected{% endif %}>{{ translations['Other'] }}</option>
             </select>
         </div>
+
         {% if bills %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>{{ translations['Description'] }}</th>
-                        <th>{{ translations['Amount'] }}</th>
-                        <th>{{ translations['Due Date'] }}</th>
-                        <th>{{ translations['Status'] }}</th>
-                        <th>{{ translations['Edit'] }}</th>
-                        <th>{{ translations['Delete'] }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for bill in bills %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
                         <tr>
-                            <td>{{ bill.Description }}</td>
-                            <td>₦{{ bill.Amount }}</td>
-                            <td>{{ translations['Due'] }} {{ bill.DueDate }}</td>
-                            <td>
-                                <a href="{{ url_for('toggle_status', record_id=bill.RecordID) }}"
-                                   class="status-{{ 'paid' if bill.Status == 'Paid' else 'unpaid' }}">
-                                    {{ translations[bill.Status] }}
-                                </a>
-                            </td>
-                            <td>
-                                <a href="{{ url_for('view_edit_bills', record_id=bill.RecordID, category=category) }}"
-                                   class="btn btn-primary btn-sm">{{ translations['Edit'] }}</a>
-                            </td>
-                            <td>
-                                <a href="{{ url_for('delete_bill', record_id=bill.RecordID) }}"
-                                   class="btn btn-danger btn-sm"
-                                   onclick="return confirm('{{ translations['Confirm Delete'] }}');">{{ translations['Delete'] }}</a>
-                            </td>
+                            <th scope="col">{{ translations['Description'] }}</th>
+                            <th scope="col">{{ translations['Amount'] }}</th>
+                            <th scope="col">{{ translations['Due Date'] }}</th>
+                            <th scope="col">{{ translations['Status'] }}</th>
+                            <th scope="col" class="action-btn">{{ translations['Edit'] }}</th>
+                            <th scope="col" class="action-btn">{{ translations['Delete'] }}</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for bill in bills %}
+                            <tr>
+                                <td>{{ bill.Description }}</td>
+                                <td>₦{{ bill.Amount }}</td>
+                                <td>{{ translations['Due'] }} {{ bill.DueDate }}</td>
+                                <td>
+                                    <a href="{{ url_for('toggle_status', record_id=bill.RecordID) }}" class="btn btn-sm btn-outline-primary">{{ translations[bill.Status] }}</a>
+                                </td>
+                                <td class="action-btn">
+                                    <a href="{{ url_for('view_edit_bills', record_id=bill.RecordID) }}" class="btn btn-sm btn-outline-success">{{ translations['Edit'] }}</a>
+                                </td>
+                                <td class="action-btn">
+                                    <a href="{{ url_for('delete_bill', record_id=bill.RecordID) }}" class="btn btn-sm btn-outline-danger">{{ translations['Delete'] }}</a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% endif %}
-        <h3>{{ translations['Add New Bill'] }}</h3>
-        <form method="POST" action="{{ url_for('view_edit_bills', category=category) }}">
-            {{ form.hidden_tag() }}
-            <div class="mb-3">
-                <label class="form-label">{{ translations['What is this bill for?'] }}</label>
-                {{ form.description(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ translations['How much is the bill? (₦)'] }}</label>
-                {{ form.amount(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ translations['When is this bill due?'] }}</label>
-                {{ form.due_date(class="form-control") }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ translations['Category'] }}</label>
-                {{ form.category(class="form-select") }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ translations['How often does this bill occur?'] }}</label>
-                {{ form.recurrence(class="form-select") }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ translations['Send me reminders'] }}</label>
-                {{ form.reminders(class="form-select", multiple="multiple") }}
-            </div>
-            <div class="mb-3">
-                <label class="form-label">{{ translations['Status'] }}</label>
-                {{ form.status(class="form-select") }}
-            </div>
-            {{ form.record_id(class="form-control", type="hidden") }}
-            <button type="submit" class="btn btn-primary">{{ translations['Save Bill'] }}</button>
-        </form>
+
+        <div class="form-container">
+            <h2>{{ translations['Add New Bill'] }}</h2>
+            <form method="POST">
+                {{ form.hidden_tag() }}
+                <div class="form-group mb-3">
+                    <label for="{{ form.description.id }}">{{ translations['What is this bill for?'] }}</label>
+                    {{ form.description(class="form-control") }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="{{ form.amount.id }}">{{ translations['How much is the bill? (₦)'] }}</label>
+                    {{ form.amount(class="form-control comma-separated", placeholder="e.g., 10,000") }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="{{ form.due_date.id }}">{{ translations['When is this bill due?'] }}</label>
+                    {{ form.due_date(class="form-control") }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="{{ form.category.id }}">{{ translations['Category'] }}</label>
+                    {{ form.category(class="form-select") }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="{{ form.recurrence.id }}">{{ translations['How often does this bill occur?'] }}</label>
+                    {{ form.recurrence(class="form-select") }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="{{ form.reminders.id }}">{{ translations['Send me reminders'] }}</label>
+                    {{ form.reminders(class="form-select", multiple="multiple") }}
+                </div>
+                <div class="form-group mb-3">
+                    <label for="{{ form.status.id }}">{{ translations['Status'] }}</label>
+                    {{ form.status(class="form-select") }}
+                </div>
+                {{ form.record_id(class="form-control", type="hidden") }}
+                <button type="submit" class="btn btn-primary">{{ translations['Save Bill'] }}</button>
+            </form>
+        </div>
+
         <div class="mt-3">
             <a href="{{ url_for('bill_form') }}" class="btn btn-secondary">{{ translations['Back'] }}</a>
-            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">{{ translations['Go to Dashboard'] }}</a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">{{ translations['Go to Dashboard'] }}</a>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
