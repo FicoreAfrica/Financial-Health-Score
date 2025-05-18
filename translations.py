@@ -12,6 +12,7 @@ translations = {
         'Get Started': 'Get Started',
         'English': 'English',
         'Hausa': 'Hausa',
+        'Cash':'Cash',
         'Next': 'Next',
         'View and Edit Bills': 'View and Edit Bills',
         'Select Category': 'Select Category',
@@ -328,6 +329,7 @@ translations = {
         'Any money you’ve put into farming, shares, crypto, business, or co-operative savings': 'Kowane kuɗin da kuka saka a noma, hannun jari, crypto, kasuwanci, ko ajiyar haɗin gwiwa',
         'Any money you borrowed from banks, apps, friends, or cooperative societies': 'Kowane kuɗin da kuka ranta daga bankuna, apps, abokai, ko ƙungiyoyin haɗin gwiwa',
         'Outstanding school fees, rent advance, or unpaid bills': 'Kuɗin makaranta da ba a biya ba, ci gaban haya, ko kuɗin da ba a biya',
+        'Cash':'Kudi a Hannu',
         'Get your full net worth result sent to your inbox (optional)': 'Samun cikakken sakamakon darajar kuɗinku zuwa akwatin imel ɗin ku (zaɓi)'
     }
 }
