@@ -1,108 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ session.language|default('en') }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ translations['Net Worth Calculator'] }}</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="{{ url_for('static', filename='js/comma_format.js') }}"></script>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/styles.css" rel="stylesheet">
+    <link rel="apple-touch-icon" href="/static/img/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/img/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/img/favicon-16x16.png">
     <style>
-        .ficore-logo { max-width: 200px; margin: 20px auto; display: block; }
-        .btn-primary { background-color: #28a745; border-color: #28a745; }
-        .btn-primary:hover { background-color: #218838; border-color: #1e7e34; }
-        .form-control, .form-select { border-color: #007bff; }
-        .alert-container { margin-top: 20px; }
-        .form-step { padding: 20px; background-color: #f8f9fa; border-radius: 8px; }
-        /* Customize with Ficore's actual logo and colors if different */
+        body { font-family: Arial, sans-serif; background-color: #f4f4f4; }
+        .container { max-width: 700px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 8px; }
+        .header { text-align: center; padding: 10px; background: #1E7F71; color: #fff; border-radius: 8px 8px 0 0; }
+        .logo { display: block; margin: 0 auto 10px; max-width: 150px; }
+        .form-label { font-size: 1.1em; }
+        .form-control, .form-select { font-size: 1em; margin-bottom: 10px; }
+        .btn-primary { background: #2E7D32; border: none; font-size: 1.1em; }
+        .btn-primary:hover { background: #0288D1; }
+        .btn-secondary { background: #6c757d; font-size: 1.1em; }
+        .progress { height: 20px; margin-bottom: 20px; }
+        .tooltip-icon { cursor: pointer; color: #0288D1; margin-left: 5px; }
+        .step { animation: fadeIn 0.5s; }
+        .icon { margin-right: 5px; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     </style>
 </head>
 <body>
-    <div class="container text-center">
-        <!-- Ficore Logo -->
-        <img src="{{ url_for('static', filename='imag/ficore_logo.png') }}" alt="Ficore Africa Logo" class="ficore-logo">
-        <!-- Replace 'ficore_logo.png' with your actual logo file -->
-
-        <h1>{{ translations['Net Worth Calculator'] }}</h1>
-
+    <div class="container">
+        <div class="header">
+            <img src="/static/img/ficore_logo.png" alt="Ficore Africa Logo" class="logo">
+            <h2>{{ translations['Net Worth Calculator'] }}</h2>
+        </div>
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
-                <div class="alert-container">
-                    {% for category, message in messages %}
-                        <div class="alert alert-{{ category }}">{{ message }}</div>
-                    {% endfor %}
-                </div>
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
             {% endif %}
         {% endwith %}
-
-        <form method="POST" id="net-worth-form">
+        <div class="progress">
+            <div class="progress-bar" role="progressbar" style="width: {{ '33%' if step == '1' else '66%' if step == '2' else '100%' }}" aria-valuenow="{{ '33' if step == '1' else '66' if step == '2' else '100' }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <form method="POST" action="{{ url_for('net_worth') }}">
             {{ form.hidden_tag() }}
-
-            <div class="form-step" id="step-1" {% if step != '1' %}style="display: none;"{% endif %}>
-                <h2>{{ translations['Personal Information'] }}</h2>
-                <div class="form-group mb-3">
-                    <label for="{{ form.first_name.id }}">{{ translations['Enter your first name'] }} ?</label>
+            <!-- Step 1: Personal Information -->
+            <div class="step" id="step1" {% if step != '1' %}style="display: none;"{% endif %}>
+                <h3>{{ translations['Personal Information'] }}</h3>
+                <div class="mb-3">
+                    <label class="form-label">{{ translations['Enter your first name'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Your first name for personalized results">?</span></label>
                     {{ form.first_name(class="form-control", aria_label=translations['Enter your first name']) }}
                 </div>
-                <div class="form-group mb-3">
-                    <label for="{{ form.email.id }}">✉️ {{ translations['Enter your email'] }} ?</label>
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">✉️</span>{{ translations['Enter your email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Optional: for sharing results">?</span></label>
                     {{ form.email(class="form-control", aria_label=translations['Enter your email']) }}
                 </div>
-                <div class="form-group mb-3">
-                    <label for="{{ form.language.id }}">{{ translations['Choose your language'] }} ?</label>
+                <div class="mb-3">
+                    <label class="form-label">{{ translations['Choose your language'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Select your preferred language">?</span></label>
                     {{ form.language(class="form-select", aria_label=translations['Choose your language']) }}
                 </div>
                 <button type="button" class="btn btn-primary" onclick="showStep(2)">{{ translations['Next'] }}</button>
             </div>
-
-            <div class="form-step" id="step-2" {% if step != '2' %}style="display: none;"{% endif %}>
-                <h2>{{ translations['Assets'] }}</h2>
+            <!-- Step 2: Assets -->
+            <div class="step" id="step2" {% if step != '2' %}style="display: none;"{% endif %}>
+                <h3>{{ translations['Assets'] }}</h3>
                 <p>{{ translations['What do you own?'] }}</p>
-                <div class="form-group mb-3">
-                    <label for="{{ form.cash.id }}">💵 {{ translations['Cash and Bank Balances'] }} (₦) ?</label>
-                    {{ form.cash(class="form-control comma-separated", placeholder="e.g., 150,000", aria_label=translations['Cash and Bank Balances']) }}
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">💵</span>{{ translations['Cash and Bank Balances'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Money saved in your bank account, mobile wallet, or cash at home">?</span></label>
+                    {{ form.cash(class="form-control", placeholder="e.g., 150000", aria_label=translations['Cash and Bank Balances']) }}
                 </div>
-                <div class="form-group mb-3">
-                    <label for="{{ form.physical_assets.id }}">🏠 {{ translations['Physical Assets'] }} (₦) ?</label>
-                    {{ form.physical_assets(class="form-control comma-separated", placeholder="e.g., 1,000,000", aria_label=translations['Physical Assets']) }}
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">🏠</span>{{ translations['Physical Assets'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Things like land, house, or car that belong to you">?</span></label>
+                    {{ form.physical_assets(class="form-control", placeholder="e.g., 1000000", aria_label=translations['Physical Assets']) }}
                 </div>
-                <div class="form-group mb-3">
-                    <label for="{{ form.investments.id }}">📈 {{ translations['Investments & Other Assets'] }} (₦) ?</label>
-                    {{ form.investments(class="form-control comma-separated", placeholder="e.g., 50,000", aria_label=translations['Investments & Other Assets']) }}
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">📈</span>{{ translations['Investments & Other Assets'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Any money you’ve put into farming, shares, crypto, business, or co-operative savings">?</span></label>
+                    {{ form.investments(class="form-control", placeholder="e.g., 50000", aria_label=translations['Investments & Other Assets']) }}
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="showStep(1)">{{ translations['Back'] }}</button>
                 <button type="button" class="btn btn-primary" onclick="showStep(3)">{{ translations['Next'] }}</button>
             </div>
-
-            <div class="form-step" id="step-3" {% if step != '3' %}style="display: none;"{% endif %}>
-                <h2>{{ translations['Liabilities'] }}</h2>
+            <!-- Step 3: Liabilities -->
+            <div class="step" id="step3" {% if step != '3' %}style="display: none;"{% endif %}>
+                <h3>{{ translations['Liabilities'] }}</h3>
                 <p>{{ translations['What do you owe?'] }}</p>
-                <div class="form-group mb-3">
-                    <label for="{{ form.loans.id }}">📉 {{ translations['Loans'] }} (₦) ?</label>
-                    {{ form.loans(class="form-control comma-separated", placeholder="e.g., 100,000", aria_label=translations['Loans']) }}
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">📉</span>{{ translations['Loans'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Any money you borrowed from banks, apps, friends, or cooperative societies">?</span></label>
+                    {{ form.loans(class="form-control", placeholder="e.g., 100000", aria_label=translations['Loans']) }}
                 </div>
-                <div class="form-group mb-3">
-                    <label for="{{ form.other_debts.id }}">📉 {{ translations['Other Debts'] }} (₦) ?</label>
-                    {{ form.other_debts(class="form-control comma-separated", placeholder="e.g., 30,000", aria_label=translations['Other Debts']) }}
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">📉</span>{{ translations['Other Debts'] }} (₦) <span class="tooltip-icon" data-bs-toggle="tooltip" title="Outstanding school fees, rent advance, or unpaid bills">?</span></label>
+                    {{ form.other_debts(class="form-control", placeholder="e.g., 30000", aria_label=translations['Other Debts']) }}
                 </div>
-                <div class="form-group mb-3">
-                    <label for="{{ form.auto_email.id }}">✉️ {{ translations['Send Results to My Email'] }} ?</label>
+                <div class="mb-3">
+                    <label class="form-label"><span class="icon">✉️</span>{{ translations['Send Results to My Email'] }} <span class="tooltip-icon" data-bs-toggle="tooltip" title="Get your full net worth result sent to your inbox (optional)">?</span></label>
                     {{ form.auto_email(class="form-check-input", aria_label=translations['Send Results to My Email']) }}
                 </div>
                 <button type="button" class="btn btn-secondary" onclick="showStep(2)">{{ translations['Back'] }}</button>
                 <button type="submit" class="btn btn-primary">{{ translations['Calculate Net Worth'] }}</button>
             </div>
         </form>
-
         <div class="mt-3">
             <a href="{{ url_for('dashboard') }}" class="btn btn-secondary">{{ translations['Go to Dashboard'] }}</a>
         </div>
     </div>
-
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/interactivity.js"></script>
     <script>
         function showStep(step) {
-            document.querySelectorAll('.form-step').forEach(el => el.style.display = 'none');
-            document.getElementById(`step-${step}`).style.display = 'block';
+            document.querySelectorAll('.step').forEach(s => s.style.display = 'none');
+            document.getElementById('step' + step).style.display = 'block';
+            window.history.pushState({}, '', '?step=' + step);
         }
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+                new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
     </script>
 </body>
 </html>
